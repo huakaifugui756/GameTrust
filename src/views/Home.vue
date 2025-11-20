@@ -187,14 +187,9 @@ const quickEntries = ref([
     onClick: () => router.push('/orders/create')
   },
   {
-    name: '发布需求',
-    icon: 'add-o',
-    onClick: () => router.push('/demand/create')
-  },
-  {
-    name: '成为代练',
-    icon: 'medal-o',
-    onClick: () => router.push('/provider/apply')
+    name: '需求大厅',
+    icon: 'apps-o',
+    onClick: () => router.push('/demands')
   },
   {
     name: '客服中心',
@@ -310,7 +305,8 @@ const onSearch = (value) => {
 }
 
 const viewService = (serviceId) => {
-  router.push(`/service/${serviceId}`)
+  // 暂时跳转到需求详情页面
+  router.push(`/demand/${serviceId}`)
 }
 </script>
 
@@ -355,7 +351,7 @@ const viewService = (serviceId) => {
 // 轮播图
 .banner-swipe {
   height: 180px;
-  margin: -8px 16px 16px;
+  margin: 8px 16px 16px;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);

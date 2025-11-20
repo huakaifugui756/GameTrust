@@ -27,8 +27,7 @@
       </div>
       
       <div class="action-buttons">
-        <!-- <van-button type="primary" size="small" @click="showPostDialog('需求')">发布需求</van-button>
-        <van-button type="success" size="small" @click="showPostDialog('服务')">发布服务</van-button> -->
+        <van-button type="primary" size="small" @click="createDemand">发布需求</van-button>
         <van-button type="warning" size="small" @click="createOrder">发起担保</van-button>
       </div>
     </div>
@@ -235,6 +234,10 @@ const submitPost = () => {
 
 const createOrder = () => {
   router.push('/orders/create')
+}
+
+const createDemand = () => {
+  router.push('/demand/create')
 }
 
 const enterChatRoom = (roomId) => {

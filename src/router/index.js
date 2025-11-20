@@ -39,6 +39,24 @@ const routes = [
     meta: { title: '创建订单' }
   },
   {
+    path: '/demand/create',
+    name: 'CreateDemand',
+    component: () => import('@/views/CreateDemand.vue'),
+    meta: { title: '发布需求' }
+  },
+  {
+    path: '/demand/:id',
+    name: 'DemandDetail',
+    component: () => import('@/views/DemandDetail.vue'),
+    meta: { title: '需求详情' }
+  },
+  {
+    path: '/demands',
+    name: 'DemandList',
+    component: () => import('@/views/DemandList.vue'),
+    meta: { title: '需求大厅' }
+  },
+  {
     path: '/order/:id',
     name: 'OrderDetail',
     component: () => import('@/views/OrderDetail.vue'),
@@ -85,6 +103,18 @@ const routes = [
     name: 'UserProfile',
     component: () => import('@/views/UserProfile.vue'),
     meta: { title: '用户资料' }
+  },
+  {
+    path: '/support',
+    name: 'Support',
+    component: () => import('@/views/Support.vue'),
+    meta: { title: '客服中心' }
+  },
+  {
+    path: '/search',
+    name: 'Search',
+    component: () => import('@/views/Search.vue'),
+    meta: { title: '搜索' }
   }
 ]
 
