@@ -27,8 +27,8 @@
       </div>
       
       <div class="action-buttons">
-        <van-button type="primary" size="small" @click="showPostDialog('需求')">发布需求</van-button>
-        <van-button type="success" size="small" @click="showPostDialog('服务')">发布服务</van-button>
+        <!-- <van-button type="primary" size="small" @click="showPostDialog('需求')">发布需求</van-button>
+        <van-button type="success" size="small" @click="showPostDialog('服务')">发布服务</van-button> -->
         <van-button type="warning" size="small" @click="createOrder">发起担保</van-button>
       </div>
     </div>
@@ -122,14 +122,7 @@ import { showToast } from 'vant'
 const route = useRoute()
 const router = useRouter()
 
-const game = ref({
-  id: 1,
-  name: '王者荣耀',
-  description: '5v5公平竞技手游，热门代练游戏',
-  image: 'https://picsum.photos/seed/wzry/100/100.jpg',
-  onlineCount: 12580,
-  orderCount: 3421
-})
+const game = ref({})
 
 const chatRooms = ref([
   {
@@ -193,8 +186,34 @@ onMounted(() => {
 })
 
 const loadGameDetail = (gameId) => {
-  // 模拟加载游戏详情
+  // 根据游戏ID加载游戏详情
   console.log('加载游戏详情:', gameId)
+  
+  const gameData = {
+    1: {
+      id: 1,
+      name: '王者荣耀',
+      description: '5v5公平竞技手游，热门代练游戏',
+      image: 'https://picsum.photos/seed/wzry/100/100.jpg',
+      onlineCount: 12580,
+      orderCount: 3421
+    },
+    2: {
+      id: 2,
+      name: '三角洲',
+      description: '经典战术射击游戏，段位代练热门',
+      image: 'https://picsum.photos/seed/sjz/100/100.jpg',
+      onlineCount: 8976,
+      orderCount: 2341
+    }
+  }
+  
+  if (gameData[gameId]) {
+    game.value = gameData[gameId]
+  } else {
+    // 默认显示王者荣耀
+    game.value = gameData[1]
+  }
 }
 
 const showPostDialog = (type) => {
@@ -219,7 +238,42 @@ const createOrder = () => {
 }
 
 const enterChatRoom = (roomId) => {
-  router.push(`/chat/${roomId || 1}`)
+  const actualRoomId = roomId || 1
+  const room = chatRooms.value.find(r => r.id === actualRoomId)
+  
+  if (room) {
+    // 生成群聊ID
+    const groupChatId = `group_${actualRoomId}`
+    
+    // 保存群聊信息到sessionStorage
+    const groupInfo = {
+      id: actualRoomId,
+      name: room.name,
+      avatar: `https://picsum.photos/seed/room${actualRoomId}/40/40.jpg`,
+      memberCount: room.onlineCount || 0
+    }
+    
+    sessionStorage.setItem('groupChatInfo', JSON.stringify(groupInfo))
+    
+    // 跳转到群聊页面
+    router.push(`/chat/${groupChatId}`)
+    
+    console.log('进入游戏详情页群聊:', room.name, 'ID:', groupChatId)
+  } else {
+    // 默认跳转到第一个群聊
+    const defaultRoom = chatRooms.value[0]
+    const groupChatId = `group_${defaultRoom.id}`
+    
+    const groupInfo = {
+      id: defaultRoom.id,
+      name: defaultRoom.name,
+      avatar: `https://picsum.photos/seed/room${defaultRoom.id}/40/40.jpg`,
+      memberCount: defaultRoom.onlineCount || 0
+    }
+    
+    sessionStorage.setItem('groupChatInfo', JSON.stringify(groupInfo))
+    router.push(`/chat/${groupChatId}`)
+  }
 }
 
 const showContacts = () => {

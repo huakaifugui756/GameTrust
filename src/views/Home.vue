@@ -40,7 +40,8 @@
       </div>
     </div>
 
-    <!-- 最新需求 -->
+    <!-- 最新需求 - 暂时隐藏社群功能 -->
+    <!--
     <div class="section">
       <div class="section-header flex-between">
         <h3>最新需求</h3>
@@ -74,6 +75,7 @@
         </div>
       </div>
     </div>
+    -->
   </div>
 </template>
 
@@ -102,16 +104,16 @@ const banners = ref([
 
 // 快捷入口
 const quickEntries = ref([
-  {
-    name: '发布需求',
-    icon: 'add-o',
-    onClick: () => router.push('/community?type=demand')
-  },
-  {
-    name: '发布服务',
-    icon: 'service-o',
-    onClick: () => router.push('/community?type=service')
-  },
+  // {
+  //   name: '发布需求',
+  //   icon: 'add-o',
+  //   onClick: () => router.push('/community?type=demand')
+  // },
+  // {
+  //   name: '发布服务',
+  //   icon: 'service-o',
+  //   onClick: () => router.push('/community?type=service')
+  // },
   {
     name: '发起担保',
     icon: 'shield-o',
@@ -137,18 +139,6 @@ const hotGames = ref([
     name: '三角洲',
     description: '经典战术射击游戏',
     image: 'https://picsum.photos/seed/game2/200/120.jpg'
-  },
-  {
-    id: 3,
-    name: '和平精英',
-    description: '战术竞技射击游戏',
-    image: 'https://picsum.photos/seed/game3/200/120.jpg'
-  },
-  {
-    id: 4,
-    name: '英雄联盟',
-    description: '经典MOBA端游代练',
-    image: 'https://picsum.photos/seed/game4/200/120.jpg'
   }
 ])
 

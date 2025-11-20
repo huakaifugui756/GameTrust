@@ -66,9 +66,7 @@ const activeCategory = ref('all')
 // 游戏分类
 const categories = ref([
   { name: 'MOBA', icon: 'fire-o' },
-  { name: 'RPG', icon: 'star-o' },
-  { name: '射击', icon: 'aim' },
-  { name: '卡牌', icon: 'credit-pay' }
+  { name: '射击', icon: 'aim' }
 ])
 
 // 游戏数据
@@ -84,48 +82,12 @@ const games = ref([
   },
   {
     id: 2,
-    name: '英雄联盟',
-    category: 'MOBA',
-    description: '经典MOBA端游，代练需求旺盛',
-    image: 'https://picsum.photos/seed/lol/100/100.jpg',
-    onlineCount: 8932,
-    orderCount: 2156
-  },
-  {
-    id: 3,
-    name: '原神',
-    category: 'RPG',
-    description: '开放世界冒险游戏，代肝需求大',
-    image: 'https://picsum.photos/seed/ys/100/100.jpg',
-    onlineCount: 15673,
-    orderCount: 4532
-  },
-  {
-    id: 4,
-    name: '和平精英',
+    name: '三角洲',
     category: '射击',
-    description: '战术竞技射击，段位代练热门',
-    image: 'https://picsum.photos/seed/hpjy/100/100.jpg',
-    onlineCount: 9876,
-    orderCount: 2891
-  },
-  {
-    id: 5,
-    name: '炉石传说',
-    category: '卡牌',
-    description: '策略卡牌游戏，传说段位代练',
-    image: 'https://picsum.photos/seed/lscs/100/100.jpg',
-    onlineCount: 3214,
-    orderCount: 987
-  },
-  {
-    id: 6,
-    name: '崩坏：星穹铁道',
-    category: 'RPG',
-    description: '回合制RPG，材料收集代练',
-    image: 'https://picsum.photos/seed/bhxtd/100/100.jpg',
-    onlineCount: 7654,
-    orderCount: 1876
+    description: '经典战术射击游戏，段位代练热门',
+    image: 'https://picsum.photos/seed/sjz/100/100.jpg',
+    onlineCount: 8976,
+    orderCount: 2341
   }
 ])
 

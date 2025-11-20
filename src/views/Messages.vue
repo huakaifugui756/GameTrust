@@ -17,6 +17,9 @@
         <MessageList :messages="filteredMessages" @click="goToChat" />
       </van-tab>
       <van-tab title="群聊" name="group">
+        <div style="background: #e8f5e8; padding: 8px; text-align: center; color: #28a745; font-size: 12px;">
+          群聊模式 - 点击下方群聊进入群聊界面
+        </div>
         <MessageList :messages="groupMessages" @click="goToChat" />
       </van-tab>
       <van-tab title="私聊" name="private">
@@ -186,15 +189,19 @@ const onSearch = (value) => {
 }
 
 const goToChat = (message) => {
-  console.log('点击消息:', message)
+  console.log('=== 点击消息 ===')
+  console.log('消息:', message)
   console.log('消息类型:', message.type)
   
   switch (message.type) {
     case 'group':
       // 群聊消息跳转到群聊页面
       const groupChatId = `group_${message.id}`
-      console.log('点击群聊，message:', message)
-      console.log('生成的群聊ID:', groupChatId)
+      console.log('🟢 点击群聊，message:', message)
+      console.log('🟢 生成的群聊ID:', groupChatId)
+      
+      // 在页面上显示提示
+      alert(`正在进入群聊: ${message.title}\n群聊ID: ${groupChatId}`)
       
       // 保存群聊信息到sessionStorage
       const groupInfo = {
@@ -203,14 +210,18 @@ const goToChat = (message) => {
         avatar: message.avatar,
         memberCount: message.memberCount || 0
       }
-      console.log('保存群聊信息:', groupInfo)
+      console.log('🟢 保存群聊信息:', groupInfo)
       sessionStorage.setItem('groupChatInfo', JSON.stringify(groupInfo))
       
       // 验证保存是否成功
       const saved = sessionStorage.getItem('groupChatInfo')
-      console.log('验证保存的群聊信息:', saved)
+      console.log('🟢 验证保存的群聊信息:', saved)
       
-      router.push(`/chat/${groupChatId}`)
+      // 强制跳转前暂停一下
+      setTimeout(() => {
+        console.log('🟢 开始跳转到群聊页面')
+        router.push(`/chat/${groupChatId}`)
+      }, 100)
       break
     case 'friend':
       // 好友申请跳转到好友页面

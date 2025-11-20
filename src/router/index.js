@@ -19,17 +19,24 @@ const routes = [
     component: () => import('@/views/GameDetail.vue'),
     meta: { title: '游戏详情' }
   },
-  {
-    path: '/community',
-    name: 'Community',
-    component: () => import('@/views/Community.vue'),
-    meta: { title: '社群' }
-  },
+  // 社群功能暂时隐藏
+  // {
+  //   path: '/community',
+  //   name: 'Community',
+  //   component: () => import('@/views/Community.vue'),
+  //   meta: { title: '社群' }
+  // },
   {
     path: '/orders',
     name: 'Orders',
     component: () => import('@/views/Orders.vue'),
     meta: { title: '订单' }
+  },
+  {
+    path: '/orders/create',
+    name: 'CreateOrder',
+    component: () => import('@/views/CreateOrder.vue'),
+    meta: { title: '创建订单' }
   },
   {
     path: '/order/:id',

@@ -61,6 +61,19 @@
       </div>
     </div>
 
+    <!-- 私聊担保按钮 -->
+    <div v-if="!chatInfo.isGroup" class="guarantee-section">
+      <van-button 
+        type="warning" 
+        size="small" 
+        icon="shield-o"
+        @click="createGuaranteeOrder"
+        class="guarantee-btn"
+      >
+        发起担保交易
+      </van-button>
+    </div>
+
     <!-- 输入区域 - 微信风格 -->
     <div class="input-area">
       <div class="input-wrapper">
@@ -116,7 +129,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed } from 'vue'
+import { ref, onMounted, nextTick, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 
@@ -144,10 +157,12 @@ const messages = ref([])
 
 // 群聊消息数据
 const groupMessages = {
+  // 消息页面的群聊
   8: [
     {
       id: 1,
       sender: '代练小王',
+      senderId: 'user_001',
       content: '今天有人需要代练吗？价格优惠！',
       time: '14:20',
       isSelf: false,
@@ -157,6 +172,7 @@ const groupMessages = {
     {
       id: 2,
       sender: '游戏达人',
+      senderId: 'user_002',
       content: '王者荣耀星耀上王者多少钱？',
       time: '14:22',
       isSelf: false,
@@ -165,6 +181,7 @@ const groupMessages = {
     {
       id: 3,
       sender: '代练小王',
+      senderId: 'user_001',
       content: '星耀到王者大概200元，2-3天完成',
       time: '14:25',
       isSelf: false,
@@ -175,6 +192,7 @@ const groupMessages = {
     {
       id: 1,
       sender: '队长',
+      senderId: 'user_003',
       content: '今晚8点组队吃鸡，有人来吗？',
       time: '13:45',
       isSelf: false,
@@ -184,6 +202,7 @@ const groupMessages = {
     {
       id: 2,
       sender: '狙击手小李',
+      senderId: 'user_004',
       content: '我来！今晚有空',
       time: '13:50',
       isSelf: false,
@@ -194,6 +213,7 @@ const groupMessages = {
     {
       id: 1,
       sender: '管理员',
+      senderId: 'user_006',
       content: '欢迎新朋友加入游戏代练大厅！',
       time: '12:30',
       isSelf: false,
@@ -203,10 +223,84 @@ const groupMessages = {
     {
       id: 2,
       sender: '代练大师',
+      senderId: 'user_007',
       content: '专业代练各种游戏，信誉第一，价格优惠',
       time: '12:32',
       isSelf: false,
       avatar: 'https://picsum.photos/seed/master/40/40.jpg'
+    }
+  ],
+  // 游戏详情页的群聊
+  1: [
+    {
+      id: 1,
+      sender: '群主',
+      senderId: 'user_008',
+      content: '欢迎来到王者荣耀综合交流群！',
+      time: '15:00',
+      isSelf: false,
+      avatar: 'https://picsum.photos/seed/owner/40/40.jpg',
+      showTime: true
+    },
+    {
+      id: 2,
+      sender: '游戏玩家',
+      senderId: 'user_009',
+      content: '有人一起开黑吗？我主玩打野',
+      time: '15:05',
+      isSelf: false,
+      avatar: 'https://picsum.photos/seed/player1/40/40.jpg'
+    }
+  ],
+  2: [
+    {
+      id: 1,
+      sender: '代练管理员',
+      senderId: 'user_010',
+      content: '欢迎来到代练交易群！请遵守群规。',
+      time: '16:00',
+      isSelf: false,
+      avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+      showTime: true
+    },
+    {
+      id: 2,
+      sender: '专业代练',
+      senderId: 'user_011',
+      content: '承接各种段位代练，价格优惠，信誉第一！',
+      time: '16:10',
+      isSelf: false,
+      avatar: 'https://picsum.photos/seed/pro/40/40.jpg'
+    },
+    {
+      id: 3,
+      sender: '需求玩家',
+      senderId: 'user_012',
+      content: '星耀一上王者，大概多少钱？多久能完成？',
+      time: '16:15',
+      isSelf: false,
+      avatar: 'https://picsum.photos/seed/customer/40/40.jpg'
+    }
+  ],
+  3: [
+    {
+      id: 1,
+      sender: '账号管理员',
+      senderId: 'user_013',
+      content: '欢迎来到账号交易群，交易请走平台担保！',
+      time: '14:00',
+      isSelf: false,
+      avatar: 'https://picsum.photos/seed/account_admin/40/40.jpg',
+      showTime: true
+    },
+    {
+      id: 2,
+      sender: '卖家',
+      senderId: 'user_014',
+      content: '出售V8荣耀王者账号，有典藏皮肤，价格私聊',
+      time: '14:30',
+      isSelf: false,
+      avatar: 'https://picsum.photos/seed/seller/40/40.jpg'
     }
   ]
 }
@@ -272,12 +366,26 @@ const privateMessages = {
   ]
 }
 
-const actions = [
-  { name: '查看群成员', value: 'members' },
-  { name: '群聊设置', value: 'settings' },
-  { name: '清空聊天记录', value: 'clear' },
-  { name: '举报群聊', value: 'report' }
-]
+// 根据聊天类型动态生成操作选项
+const actions = computed(() => {
+  if (chatInfo.value.isGroup) {
+    // 群聊操作
+    return [
+      { name: '查看群成员', value: 'members' },
+      { name: '群聊设置', value: 'settings' },
+      { name: '清空聊天记录', value: 'clear' },
+      { name: '举报群聊', value: 'report' }
+    ]
+  } else {
+    // 私聊操作
+    return [
+      { name: '发起担保', value: 'create_order' },
+      { name: '清空聊天记录', value: 'clear' },
+      { name: '举报用户', value: 'report' },
+      { name: '拉黑用户', value: 'block' }
+    ]
+  }
+})
 
 const avatarActions = [
   { name: '发消息', value: 'private_chat' },
@@ -297,13 +405,39 @@ const dateGroups = computed(() => {
 })
 
 onMounted(() => {
-  loadChatInfo()
-  loadMessages()
-  scrollToBottom()
+  console.log('=== Chat页面加载 ===')
+  console.log('当前chatId:', chatId)
+  console.log('当前路由:', route.fullPath)
+  
+  // 延迟加载，确保 sessionStorage 数据已准备就绪
+  setTimeout(() => {
+    loadChatInfo()
+    loadMessages()
+    scrollToBottom()
+  }, 50)
 })
+
+// 监听路由参数变化
+watch(
+  () => route.params.id,
+  (newId, oldId) => {
+    console.log('🔵 路由参数变化:', { oldId, newId })
+    if (newId && newId !== oldId) {
+      console.log('🔵 重新加载聊天页面')
+      // 延迟加载，确保 sessionStorage 数据已准备就绪
+      setTimeout(() => {
+        loadChatInfo()
+        loadMessages()
+        scrollToBottom()
+      }, 50)
+    }
+  },
+  { immediate: false }
+)
 
 const loadChatInfo = () => {
   console.log('加载聊天信息，chatId:', chatId)
+  console.log('sessionStorage中的privateChatUser:', sessionStorage.getItem('privateChatUser'))
   
   // 检查是否是私聊ID
   const isPrivateChat = chatId.startsWith('private_')
@@ -313,6 +447,13 @@ const loadChatInfo = () => {
   const isGuaranteeGroup = chatId.startsWith('guarantee_')
   
   console.log('聊天类型判断:', { isPrivateChat, isGroupChat, isGuaranteeGroup })
+  
+  // 如果是私聊，添加调试信息
+  if (isPrivateChat) {
+    console.log('🔵 检测到私聊模式')
+    const savedUser = sessionStorage.getItem('privateChatUser')
+    console.log('🔵 保存的用户信息:', savedUser)
+  }
   
   // 如果是担保交易群
   if (isGuaranteeGroup) {
@@ -336,6 +477,31 @@ const loadChatInfo = () => {
         online: true,
         memberCount: 3
       }
+    }
+  }
+  // 如果是私聊ID，从sessionStorage获取用户信息
+  if (isPrivateChat) {
+    const savedUser = sessionStorage.getItem('privateChatUser')
+    console.log('🔵 私聊模式，获取保存的用户信息:', savedUser)
+    
+    if (savedUser) {
+      const user = JSON.parse(savedUser)
+      chatInfo.value = {
+        title: user.name,
+        avatar: user.avatar,
+        isGroup: false,
+        online: true
+      }
+      console.log('🔵 使用保存的用户信息:', user)
+    } else {
+      // 默认私聊信息
+      chatInfo.value = {
+        title: '新朋友',
+        avatar: 'https://picsum.photos/seed/newfriend/40/40.jpg',
+        isGroup: false,
+        online: true
+      }
+      console.log('🔵 使用默认私聊信息')
     }
   }
   // 如果是群聊ID，从sessionStorage获取群聊信息
@@ -367,27 +533,44 @@ const loadChatInfo = () => {
       console.log('使用默认群聊信息')
     }
   }
-  // 如果是私聊ID，从sessionStorage获取用户信息
-  else if (isPrivateChat) {
-    const savedUser = sessionStorage.getItem('privateChatUser')
-    if (savedUser) {
-      const user = JSON.parse(savedUser)
+  // 如果是担保交易群
+  else if (isGuaranteeGroup) {
+    const guaranteeData = sessionStorage.getItem('guaranteeGroup')
+    if (guaranteeData) {
+      const group = JSON.parse(guaranteeData)
       chatInfo.value = {
-        title: user.name,
-        avatar: user.avatar,
-        isGroup: false,
-        online: true
+        title: group.title,
+        avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+        isGroup: true,
+        isGuaranteeGroup: true,
+        online: true,
+        memberCount: 3
       }
     } else {
-      // 默认私聊信息
       chatInfo.value = {
-        title: '新朋友',
-        avatar: 'https://picsum.photos/seed/newfriend/40/40.jpg',
-        isGroup: false,
-        online: true
+        title: '担保交易群',
+        avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+        isGroup: true,
+        isGuaranteeGroup: true,
+        online: true,
+        memberCount: 3
       }
     }
-  } else {
+  }
+  // 如果是纯数字ID，默认为群聊
+  else if (/^\d+$/.test(chatId)) {
+    console.log('🔵 检测到数字ID，设置为群聊模式')
+    chatInfo.value = {
+      title: '游戏交流群',
+      avatar: 'https://picsum.photos/seed/group/40/40.jpg',
+      isGroup: true,
+      isGuaranteeGroup: false,
+      online: true,
+      memberCount: 50
+    }
+    console.log('🔵 使用数字ID的群聊信息')
+  }
+  else {
     // 默认为私聊
     chatInfo.value = {
       title: '用户',
@@ -395,6 +578,7 @@ const loadChatInfo = () => {
       isGroup: false,
       online: true
     }
+    console.log('🔵 使用默认用户信息')
   }
   
   console.log('最终聊天信息:', chatInfo.value)
@@ -429,12 +613,12 @@ const loadMessages = () => {
         }
       ]
       
-      // 管理员自动发收款码
+      // 管理员立即发收款码
       setTimeout(() => {
         const adminMessage = {
           id: messages.value.length + 1,
           sender: '管理员',
-          content: '【收款码】请扫描下方二维码完成支付\n[收款码图片]',
+          content: '【收款码】请扫描下方二维码完成支付\n[收款码图片]\n\n💡 支付完成后请在群内回复"已支付"，管理员会确认并协助完成交易。',
           time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
           isSelf: false,
           avatar: 'https://picsum.photos/seed/admin/40/40.jpg'
@@ -444,13 +628,16 @@ const loadMessages = () => {
         nextTick(() => {
           scrollToBottom()
         })
-      }, 1500)
+      }, 1000)
     } else {
       messages.value = []
     }
   } else if (chatInfo.value.isGroup) {
     // 普通群聊消息
-    const groupId = chatId.replace('group_', '')
+    let groupId = chatId
+    if (chatId.startsWith('group_')) {
+      groupId = chatId.replace('group_', '')
+    }
     console.log('加载群聊消息，groupId:', groupId)
     console.log('可用的群聊消息:', Object.keys(groupMessages))
     
@@ -568,7 +755,36 @@ const onActionSelect = (action) => {
       clearChatHistory()
       break
     case 'report':
-      showToast('举报已提交')
+      if (chatInfo.value.isGroup) {
+        showToast('举报群聊已提交')
+      } else {
+        showToast('举报用户已提交')
+      }
+      break
+    case 'create_order':
+      // 直接创建担保交易群聊
+      const guaranteeGroup = {
+        id: 'guarantee_' + Date.now(),
+        title: `担保交易：${chatInfo.value.title}`,
+        initiator: {
+          id: selectedUser.value?.id || 'user_' + Date.now(),
+          name: chatInfo.value.title,
+          avatar: chatInfo.value.avatar
+        },
+        amount: '待确认',
+        description: '担保交易',
+        createdAt: new Date().toISOString()
+      }
+      
+      // 保存担保交易群信息
+      sessionStorage.setItem('guaranteeGroup', JSON.stringify(guaranteeGroup))
+      
+      // 直接跳转到担保交易群聊
+      window.location.href = `/chat/${guaranteeGroup.id}`
+      showToast('担保交易群聊已创建')
+      break
+    case 'block':
+      showToast('用户已拉黑')
       break
   }
 }
@@ -596,36 +812,118 @@ const onInputFocus = () => {
   }, 300)
 }
 
+// 发起担保交易
+const createGuaranteeOrder = () => {
+  // 获取当前私聊用户信息
+  const savedUser = sessionStorage.getItem('privateChatUser')
+  let userInfo = null
+  
+  if (savedUser) {
+    userInfo = JSON.parse(savedUser)
+  } else {
+    // 如果没有保存的用户信息，使用当前聊天信息
+    userInfo = {
+      id: 'user_' + Date.now(),
+      name: chatInfo.value.title,
+      avatar: chatInfo.value.avatar
+    }
+  }
+  
+  // 直接创建担保交易群聊
+  const guaranteeGroup = {
+    id: 'guarantee_' + Date.now(),
+    title: `担保交易：${userInfo.name}`,
+    initiator: userInfo,
+    amount: '待确认',
+    description: '担保交易',
+    createdAt: new Date().toISOString()
+  }
+  
+  console.log('🔶 创建担保交易群:', guaranteeGroup)
+  
+  // 保存担保交易群信息
+  sessionStorage.setItem('guaranteeGroup', JSON.stringify(guaranteeGroup))
+  
+  // 直接跳转到担保交易群聊
+  window.location.href = `/chat/${guaranteeGroup.id}`
+  showToast(`担保交易群聊已创建`)
+}
+
 // 头像点击事件
 const onAvatarClick = (message) => {
+  console.log('🔵 点击头像，消息对象:', message)
+  console.log('🔵 senderId:', message.senderId)
+  
+  // 先用alert测试点击是否生效
+  alert(`点击了 ${message.sender} 的头像`)
+  
   selectedUser.value = {
     id: message.senderId || Math.random().toString(36).substr(2, 9),
     name: message.sender,
     avatar: message.avatar
   }
+  
+  console.log('🔵 选中的用户信息:', selectedUser.value)
+  
+  // 直接设置showAvatarActions
   showAvatarActions.value = true
+  console.log('🔵 showAvatarActions设置为:', showAvatarActions.value)
 }
 
 // 头像操作选择
 const onAvatarActionSelect = (action) => {
+  console.log('🔵 头像操作选择:', action)
+  console.log('🔵 当前选中的用户:', selectedUser.value)
+  
   showAvatarActions.value = false
   
-  if (!selectedUser.value) return
+  if (!selectedUser.value) {
+    console.log('🔴 错误：没有选中的用户')
+    showToast('用户信息错误，请重试')
+    return
+  }
   
   switch (action.value) {
     case 'private_chat':
+      console.log('🔵 选择发消息')
       // 保存用户信息到sessionStorage，用于私聊页面显示
       const privateChatId = `private_${selectedUser.value.id}`
-      sessionStorage.setItem('privateChatUser', JSON.stringify(selectedUser.value))
-      router.push(`/chat/${privateChatId}`)
-      showToast(`正在与 ${selectedUser.value.name} 私聊`)
+      const userInfo = {
+        id: selectedUser.value.id,
+        name: selectedUser.value.name,
+        avatar: selectedUser.value.avatar
+      }
+      console.log('🔵 准备进入私聊，保存用户信息:', userInfo)
+      
+      try {
+        sessionStorage.setItem('privateChatUser', JSON.stringify(userInfo))
+        console.log('🔵 用户信息保存成功')
+        
+        // 验证保存是否成功
+        const saved = sessionStorage.getItem('privateChatUser')
+        console.log('🔵 验证保存的数据:', saved)
+        
+        // 使用 window.location.href 直接跳转，确保页面重新加载
+        console.log('🔵 开始跳转到私聊页面:', `/chat/${privateChatId}`)
+        showToast(`正在与 ${selectedUser.value.name} 私聊`)
+        
+        // 使用 nextTick 确保 Toast 显示后再跳转
+        nextTick(() => {
+          window.location.href = `/chat/${privateChatId}`
+        })
+      } catch (error) {
+        console.error('🔴 保存用户信息失败:', error)
+        showToast('跳转失败，请重试')
+      }
       break
     case 'add_friend':
+      console.log('🔵 选择加好友')
       // 跳转到加好友页面
       router.push('/friends')
       showToast(`正在添加 ${selectedUser.value.name} 为好友`)
       break
     case 'view_profile':
+      console.log('🔵 选择查看资料')
       // 跳转到用户资料页面
       router.push(`/profile/${selectedUser.value.id}`)
       showToast(`查看 ${selectedUser.value.name} 的资料`)
@@ -862,6 +1160,19 @@ const onAvatarActionSelect = (action) => {
         }
       }
     }
+  }
+}
+
+// 私聊担保区域
+.guarantee-section {
+  background: #fff3cd;
+  padding: 8px 16px;
+  border-top: 1px solid #ffeaa7;
+  text-align: center;
+  
+  .guarantee-btn {
+    border-radius: 20px;
+    font-weight: 500;
   }
 }
 

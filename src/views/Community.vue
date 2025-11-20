@@ -53,7 +53,7 @@
     </van-tabs>
 
     <!-- 发布按钮 -->
-    <van-floating-bubble icon="plus" axis="xy" @click="showPostDialog" />
+    <!-- <van-floating-bubble icon="plus" axis="xy" @click="showPostDialog" /> -->
 
     <!-- 发布帖子弹窗 -->
     <van-dialog v-model:show="postDialogVisible" title="发布帖子" show-cancel-button>
