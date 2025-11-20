@@ -17,6 +17,39 @@
       <van-tab title="交流" name="chat">
         <PostList :posts="chatPosts" @view-post="viewPost" @like-post="likePost" />
       </van-tab>
+      
+      <van-tab title="聊天室" name="chatroom">
+        <div class="chatroom-list">
+          <div class="section-title">
+            <h3>热门聊天室</h3>
+          </div>
+          <div class="chatroom-grid">
+            <div 
+              v-for="room in chatRooms" 
+              :key="room.id" 
+              class="chatroom-card"
+              @click="enterChatRoom(room)"
+            >
+              <div class="room-avatar">
+                <img :src="room.avatar" :alt="room.name" />
+              </div>
+              <div class="room-info">
+                <div class="room-name">{{ room.name }}</div>
+                <div class="room-desc">{{ room.description }}</div>
+                <div class="room-stats">
+                  <span class="member-count">{{ room.memberCount }}人</span>
+                  <span class="online-status" :class="{ 'online': room.online }">
+                    {{ room.online ? '在线' : '离线' }}
+                  </span>
+                </div>
+              </div>
+              <div class="room-arrow">
+                <van-icon name="arrow" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </van-tab>
     </van-tabs>
 
     <!-- 发布按钮 -->
@@ -190,6 +223,64 @@ const chatPosts = ref([
   }
 ])
 
+// 聊天室数据
+const chatRooms = ref([
+  {
+    id: 1,
+    name: '王者荣耀代练群',
+    description: '专业代练交流，段位提升讨论',
+    avatar: 'https://picsum.photos/seed/wangzhe/60/60.jpg',
+    memberCount: 128,
+    online: true,
+    category: '代练'
+  },
+  {
+    id: 2,
+    name: '和平精英交流群',
+    description: '战术交流，组队开黑',
+    avatar: 'https://picsum.photos/seed/heping/60/60.jpg',
+    memberCount: 86,
+    online: true,
+    category: '交流'
+  },
+  {
+    id: 3,
+    name: '原神玩家群',
+    description: '原神攻略，材料分享',
+    avatar: 'https://picsum.photos/seed/yuanshen/60/60.jpg',
+    memberCount: 95,
+    online: false,
+    category: '攻略'
+  },
+  {
+    id: 4,
+    name: '英雄联盟代练',
+    description: 'LOL代练服务，上分保障',
+    avatar: 'https://picsum.photos/seed/lol/60/60.jpg',
+    memberCount: 67,
+    online: true,
+    category: '代练'
+  },
+  {
+    id: 5,
+    name: '游戏账号交易',
+    description: '安全账号买卖，担保交易',
+    avatar: 'https://picsum.photos/seed/trade/60/60.jpg',
+    memberCount: 45,
+    online: false,
+    category: '交易'
+  },
+  {
+    id: 6,
+    name: '新手玩家互助',
+    description: '新手指导，问题解答',
+    avatar: 'https://picsum.photos/seed/newbie/60/60.jpg',
+    memberCount: 112,
+    online: true,
+    category: '互助'
+  }
+])
+
 onMounted(() => {
   loadPosts()
 })
@@ -228,6 +319,10 @@ const viewPost = (postId) => {
 const likePost = (postId) => {
   showToast('点赞成功')
 }
+
+const enterChatRoom = (room) => {
+  router.push(`/chat/${room.id}`)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -240,6 +335,108 @@ const likePost = (postId) => {
   
   .van-field {
     margin-bottom: 12px;
+  }
+}
+
+// 聊天室列表样式
+.chatroom-list {
+  padding: 16px;
+
+  .section-title {
+    margin-bottom: 16px;
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+    }
+  }
+
+  .chatroom-grid {
+    .chatroom-card {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      background: #fff;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:active {
+        transform: scale(0.98);
+        background: #f8f9fa;
+      }
+
+      .room-avatar {
+        width: 50px;
+        height: 50px;
+        margin-right: 12px;
+        flex-shrink: 0;
+
+        img {
+          width: 100%;
+          height: 100%;
+          border-radius: 10px;
+          object-fit: cover;
+        }
+      }
+
+      .room-info {
+        flex: 1;
+        min-width: 0;
+
+        .room-name {
+          font-size: 16px;
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 4px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .room-desc {
+          font-size: 13px;
+          color: #666;
+          margin-bottom: 6px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .room-stats {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+
+          .member-count {
+            font-size: 12px;
+            color: #999;
+          }
+
+          .online-status {
+            font-size: 12px;
+            color: #ff4d4f;
+
+            &.online {
+              color: #52c41a;
+            }
+          }
+        }
+      }
+
+      .room-arrow {
+        margin-left: 12px;
+
+        .van-icon {
+          color: #ccc;
+          font-size: 16px;
+        }
+      }
+    }
   }
 }
 </style>

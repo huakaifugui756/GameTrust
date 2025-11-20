@@ -54,6 +54,30 @@ const routes = [
     name: 'Register',
     component: () => import('@/views/Register.vue'),
     meta: { title: '注册' }
+  },
+  {
+    path: '/messages',
+    name: 'Messages',
+    component: () => import('@/views/Messages.vue'),
+    meta: { title: '消息' }
+  },
+  {
+    path: '/chat/:id',
+    name: 'Chat',
+    component: () => import('@/views/Chat.vue'),
+    meta: { title: '聊天' }
+  },
+  {
+    path: '/friends',
+    name: 'Friends',
+    component: () => import('@/views/Friends.vue'),
+    meta: { title: '好友' }
+  },
+  {
+    path: '/profile/:id?',
+    name: 'UserProfile',
+    component: () => import('@/views/UserProfile.vue'),
+    meta: { title: '用户资料' }
   }
 ]
 
