@@ -135,9 +135,16 @@ const formatTime = (time) => {
       line-height: 1.5;
       margin-bottom: 12px;
       display: -webkit-box;
+      display: -moz-box;
+      display: box;
       -webkit-line-clamp: 2;
+      line-clamp: 2;
       -webkit-box-orient: vertical;
+      -moz-box-orient: vertical;
+      box-orient: vertical;
       overflow: hidden;
+      text-overflow: ellipsis;
+      min-height: 42px; /* 确保至少有两行的高度 */
     }
     
     .demand-footer {

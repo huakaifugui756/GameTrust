@@ -39,7 +39,7 @@
           >
             <!-- 需求头部 -->
             <div class="demand-header">
-              <div class="demand-title">{{ demand.title }}</div>
+              <div class="demand-title" v-html="sanitizeHtml(demand.title)"></div>
               <van-tag :type="getStatusType(demand.status)" size="small">
                 {{ demand.status }}
               </van-tag>
@@ -55,7 +55,7 @@
             </div>
 
             <!-- 描述 -->
-            <div class="demand-desc">{{ demand.description }}</div>
+            <div class="demand-desc" v-html="sanitizeHtml(demand.description)"></div>
 
             <!-- 附加要求 -->
             <div class="requirements" v-if="demand.requirements?.length">
@@ -230,6 +230,18 @@ const mockDemands = [
   }
 ]
 
+// HTML 清理函数 - 防止 XSS 攻击
+const sanitizeHtml = (text) => {
+  if (!text) return ''
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;')
+}
+
 // 获取需求列表
 const fetchDemands = async (isRefresh = false) => {
   try {
@@ -241,33 +253,34 @@ const fetchDemands = async (isRefresh = false) => {
     // 模拟API调用
     await new Promise(resolve => setTimeout(resolve, 1000))
 
-    // 模拟筛选逻辑
-    let filteredDemands = [...mockDemands]
-    
-    if (filters.type) {
-      filteredDemands = filteredDemands.filter(d => d.type === filters.type)
-    }
-    if (filters.game) {
-      filteredDemands = filteredDemands.filter(d => d.gameName === filters.game)
-    }
-    if (filters.status) {
-      filteredDemands = filteredDemands.filter(d => d.status === filters.status)
+    // 模拟筛选逻辑 - 使用单次遍历优化性能
+    let filteredDemands = mockDemands.filter(demand => {
+      // 搜索筛选
+      const searchKeyword = route.query.search?.toLowerCase()
+      if (searchKeyword) {
+        const searchText = `${demand.title} ${demand.description} ${demand.gameName}`.toLowerCase()
+        if (!searchText.includes(searchKeyword)) return false
+      }
+      
+      // 类型筛选
+      if (filters.type && demand.type !== filters.type) return false
+      // 游戏筛选
+      if (filters.game && demand.gameName !== filters.game) return false
+      // 状态筛选
+      if (filters.status && demand.status !== filters.status) return false
+      
+      return true
+    })
+
+    // 排序逻辑 - 使用预定义的比较函数
+    const sortFunctions = {
+      price_high: (a, b) => b.maxPrice - a.maxPrice,
+      price_low: (a, b) => a.minPrice - b.minPrice,
+      popular: (a, b) => b.likes - a.likes,
+      latest: (a, b) => new Date(b.createTime) - new Date(a.createTime)
     }
 
-    // 排序逻辑
-    switch (filters.sort) {
-      case 'price_high':
-        filteredDemands.sort((a, b) => b.maxPrice - a.maxPrice)
-        break
-      case 'price_low':
-        filteredDemands.sort((a, b) => a.minPrice - b.minPrice)
-        break
-      case 'popular':
-        filteredDemands.sort((a, b) => b.likes - a.likes)
-        break
-      default:
-        filteredDemands.sort((a, b) => new Date(b.createTime) - new Date(a.createTime))
-    }
+    filteredDemands.sort(sortFunctions[filters.sort] || sortFunctions.latest)
 
     // 分页逻辑
     const start = (page.value - 1) * pageSize
@@ -287,6 +300,7 @@ const fetchDemands = async (isRefresh = false) => {
     page.value++
 
   } catch (error) {
+    console.error('获取需求列表失败:', error)
     showToast('加载失败')
   } finally {
     loading.value = false
@@ -343,18 +357,10 @@ const formatTime = (time) => {
 
 // 监听路由参数变化
 watch(() => route.query.search, (newSearch) => {
-  if (newSearch) {
-    // 如果有搜索参数，更新搜索值并重新获取数据
-    fetchDemands(true)
-  }
+  fetchDemands(true)
 })
 
 onMounted(() => {
-  // 检查是否有搜索参数
-  if (route.query.search) {
-    // 这里可以添加搜索逻辑
-    console.log('搜索关键词:', route.query.search)
-  }
   fetchDemands(true)
 })
 </script>
@@ -428,9 +434,20 @@ onMounted(() => {
     line-height: 1.5;
     margin-bottom: 12px;
     display: -webkit-box;
+    display: -moz-box;
+    display: box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
+    -moz-box-orient: vertical;
+    box-orient: vertical;
     overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 42px; /* 确保至少有两行的高度 */
+  }
+  
+  .demand-desc:empty {
+    display: none;
   }
   
   .requirements {
