@@ -33,10 +33,9 @@
     </div>
 
     <!-- 功能入口 -->
-    <van-grid :column-num="4" :border="false" class="feature-grid">
+    <van-grid :column-num="3" :border="false" class="feature-grid">
       <van-grid-item icon="chat-o" text="聊天室" @click="enterChatRoom" />
       <van-grid-item icon="friends-o" text="联系人" @click="showContacts" />
-      <van-grid-item icon="bookmark-o" text="帖子专区" @click="showPosts" />
       <van-grid-item icon="user-o" text="个人中心" @click="$router.push('/profile')" />
     </van-grid>
 
@@ -57,8 +56,8 @@
       </div>
     </div>
 
-    <!-- 最新帖子 -->
-    <div class="latest-posts section">
+    <!-- 最新帖子暂时隐藏 -->
+    <!-- <div class="latest-posts section">
       <h3>最新帖子</h3>
       <div class="post-list">
         <div v-for="post in latestPosts" :key="post.id" class="post-item card" @click="viewPost(post.id)">
@@ -87,7 +86,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
 
     <!-- 发布帖子弹窗 -->
     <van-dialog v-model:show="postDialogVisible" :title="`发布${postType}`" show-cancel-button>
