@@ -13,26 +13,11 @@
             name="phone"
             label="手机号"
             placeholder="请输入手机号"
-            :rules="[{ required: true, message: '请输入手机号' }]"
+            :rules="[
+              { required: true, message: '请输入手机号' },
+              { validator: validatePhone, message: '请输入正确的手机号' }
+            ]"
           />
-          <van-field
-            v-model="form.code"
-            center
-            label="验证码"
-            placeholder="请输入验证码"
-            :rules="[{ required: true, message: '请输入验证码' }]"
-          >
-            <template #button>
-              <van-button
-                size="small"
-                type="primary"
-                :disabled="codeCountdown > 0"
-                @click="sendCode"
-              >
-                {{ codeCountdown > 0 ? `${codeCountdown}s` : '发送验证码' }}
-              </van-button>
-            </template>
-          </van-field>
           <van-field
             v-model="form.password"
             type="password"
@@ -84,16 +69,16 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, showSuccessToast, showFailToast } from 'vant'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const loading = ref(false)
-const codeCountdown = ref(0)
 const agreeTerms = ref(false)
 
 const form = ref({
   phone: '',
-  code: '',
   password: '',
   confirmPassword: ''
 })
@@ -105,23 +90,15 @@ const validatePassword = (value) => {
   return true
 }
 
-const sendCode = async () => {
-  if (!form.value.phone) {
-    showToast('请先输入手机号')
-    return
+const validatePhone = (value) => {
+  const phoneRegex = /^1[3-9]\d{9}$/
+  if (!phoneRegex.test(value)) {
+    return '请输入正确的手机号'
   }
-  
-  // 模拟发送验证码
-  showToast('验证码已发送')
-  codeCountdown.value = 60
-  
-  const timer = setInterval(() => {
-    codeCountdown.value--
-    if (codeCountdown.value <= 0) {
-      clearInterval(timer)
-    }
-  }, 1000)
+  return true
 }
+
+
 
 const onSubmit = async () => {
   if (!agreeTerms.value) {
@@ -129,27 +106,41 @@ const onSubmit = async () => {
     return
   }
   
+  // 验证手机号格式
+  if (validatePhone(form.value.phone) !== true) {
+    showToast('请输入正确的手机号')
+    return
+  }
+  
   loading.value = true
   
   try {
-    // 模拟注册请求
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const result = await authStore.register({
+      phone: form.value.phone,
+      password: form.value.password
+    })
     
-    showToast('注册成功')
-    router.push('/login')
+    if (result.success) {
+      showSuccessToast('注册成功，请登录')
+      router.push('/login')
+    } else {
+      showFailToast(result.error || '注册失败')
+    }
   } catch (error) {
-    showToast('注册失败，请重试')
+    showFailToast('注册失败，请重试')
   } finally {
     loading.value = false
   }
 }
 
 const viewTerms = () => {
-  router.push('/terms')
+  // 创建用户协议页面或显示弹窗
+  showToast('用户协议页面开发中')
 }
 
 const viewPrivacy = () => {
-  router.push('/privacy')
+  // 创建隐私政策页面或显示弹窗
+  showToast('隐私政策页面开发中')
 }
 </script>
 

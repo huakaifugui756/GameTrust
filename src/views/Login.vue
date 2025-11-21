@@ -30,6 +30,13 @@
             登录
           </van-button>
           
+          <div class="test-account">
+            <van-button size="small" plain type="default" @click="fillTestAccount">
+              使用测试账号
+            </van-button>
+            <span class="test-tip">测试账号：13800138000 / 123456</span>
+          </div>
+          
           <div class="form-links">
             <span @click="$router.push('/register')">注册账号</span>
             <span @click="forgotPassword">忘记密码</span>
@@ -58,9 +65,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, showSuccessToast, showFailToast } from 'vant'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const loading = ref(false)
 
 const form = ref({
@@ -69,31 +78,51 @@ const form = ref({
 })
 
 const onSubmit = async () => {
+  if (!form.value.phone || !form.value.password) {
+    showToast('请填写完整信息')
+    return
+  }
+  
   loading.value = true
   
   try {
-    // 模拟登录请求
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const result = await authStore.login({
+      phone: form.value.phone,
+      password: form.value.password
+    })
     
-    showToast('登录成功')
-    router.push('/')
+    if (result.success) {
+      showSuccessToast('登录成功')
+      // 登录成功后跳转到首页或之前的页面
+      const redirect = router.currentRoute.value.query.redirect || '/'
+      router.push(redirect)
+    } else {
+      showFailToast(result.error || '登录失败')
+    }
   } catch (error) {
-    showToast('登录失败，请重试')
+    showFailToast('登录失败，请重试')
   } finally {
     loading.value = false
   }
 }
 
 const forgotPassword = () => {
-  showToast('忘记密码功能')
+  router.push('/forgot-password')
 }
 
-const wechatLogin = () => {
-  showToast('微信登录')
+const wechatLogin = async () => {
+  showToast('微信登录功能开发中')
 }
 
-const qqLogin = () => {
-  showToast('QQ登录')
+const qqLogin = async () => {
+  showToast('QQ登录功能开发中')
+}
+
+// 测试账号快速填充
+const fillTestAccount = () => {
+  form.value.phone = '13800138000'
+  form.value.password = '123456'
+  showToast('已填充测试账号')
 }
 </script>
 
@@ -131,6 +160,29 @@ const qqLogin = () => {
     
     .van-button {
       margin-bottom: 16px;
+    }
+    
+    .test-account {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 16px;
+      
+      .van-button {
+        margin-bottom: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        
+        &:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+      }
+      
+      .test-tip {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.7);
+      }
     }
     
     .form-links {

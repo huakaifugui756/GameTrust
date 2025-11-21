@@ -30,13 +30,13 @@ const routes = [
     path: '/orders',
     name: 'Orders',
     component: () => import('@/views/Orders.vue'),
-    meta: { title: '订单' }
+    meta: { title: '订单', requiresAuth: true }
   },
   {
     path: '/orders/create',
     name: 'CreateOrder',
     component: () => import('@/views/CreateOrder.vue'),
-    meta: { title: '创建订单' }
+    meta: { title: '创建订单', requiresAuth: true }
   },
   // 需求相关功能暂时隐藏
   // {
@@ -67,7 +67,7 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/Profile.vue'),
-    meta: { title: '我的' }
+    meta: { title: '我的', requiresAuth: true }
   },
   {
     path: '/login',
@@ -82,22 +82,28 @@ const routes = [
     meta: { title: '注册' }
   },
   {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/views/ForgotPassword.vue'),
+    meta: { title: '找回密码' }
+  },
+  {
     path: '/messages',
     name: 'Messages',
     component: () => import('@/views/Messages.vue'),
-    meta: { title: '消息' }
+    meta: { title: '消息', requiresAuth: true }
   },
   {
     path: '/chat/:id',
     name: 'Chat',
     component: () => import('@/views/Chat.vue'),
-    meta: { title: '聊天' }
+    meta: { title: '聊天', requiresAuth: true }
   },
   {
     path: '/friends',
     name: 'Friends',
     component: () => import('@/views/Friends.vue'),
-    meta: { title: '好友' }
+    meta: { title: '好友', requiresAuth: true }
   },
   {
     path: '/profile/:id?',
@@ -131,11 +137,44 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   // 设置页面标题
   if (to.meta.title) {
     document.title = `${to.meta.title} - GameTrust`
   }
+  
+  // 检查是否需要登录
+  const requiresAuth = to.meta.requiresAuth
+  
+  if (requiresAuth) {
+    // 动态导入auth store避免循环依赖
+    const { useAuthStore } = await import('@/stores/auth')
+    const authStore = useAuthStore()
+    
+    // 检查登录状态
+    const isAuthenticated = await authStore.checkAuthStatus()
+    
+    if (!isAuthenticated) {
+      // 未登录，跳转到登录页，并保存目标路由
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath }
+      })
+      return
+    }
+  }
+  
+  // 如果已登录用户访问登录/注册页，重定向到首页
+  if ((to.path === '/login' || to.path === '/register') && to.query.redirect !== from.path) {
+    const { useAuthStore } = await import('@/stores/auth')
+    const authStore = useAuthStore()
+    
+    if (authStore.isLoggedIn) {
+      next('/')
+      return
+    }
+  }
+  
   next()
 })
 

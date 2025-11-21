@@ -13,11 +13,18 @@ import './styles/index.scss'
 // 在桌面端模拟移动端触摸
 import '@vant/touch-emulator'
 
+// 引入认证store
+import { useAuthStore } from './stores/auth'
+
 const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
 app.use(Vant)
+
+// 初始化认证状态
+const authStore = useAuthStore()
+authStore.initUser()
 
 app.mount('#app')
