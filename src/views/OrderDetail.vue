@@ -1,324 +1,406 @@
 <template>
   <div class="order-detail page-container">
+    <!-- 顶部导航 -->
     <van-nav-bar
       title="订单详情"
       left-arrow
       @click-left="$router.go(-1)"
     />
 
-    <div v-if="order" class="order-content">
+    <div v-if="order" class="detail-content">
       <!-- 订单状态 -->
-      <div class="status-card card">
+      <div class="status-card">
         <div class="status-header">
-          <van-tag :type="order.statusColor" size="large">{{ order.statusText }}</van-tag>
-          <span class="order-id">{{ order.id }}</span>
+          <van-icon :name="getStatusIcon(order.status)" :color="getStatusColor(order.status)" size="24" />
+          <span class="status-text" :style="{ color: getStatusColor(order.status) }">
+            {{ getStatusText(order.status) }}
+          </span>
         </div>
-        <div class="status-desc">{{ getStatusDescription(order.status) }}</div>
+        <div class="order-title">{{ order.title }}</div>
       </div>
 
-      <!-- 订单信息 -->
-      <div class="info-card card">
-        <h3>订单信息</h3>
-        <div class="info-item">
-          <span class="label">交易类型</span>
-          <span class="value">{{ order.type }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">游戏名称</span>
-          <span class="value">{{ order.game }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">服务内容</span>
-          <span class="value">{{ order.content }}</span>
-        </div>
-        <div v-if="order.deadline" class="info-item">
-          <span class="label">完成时限</span>
-          <span class="value">{{ formatTime(order.deadline) }}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">创建时间</span>
-          <span class="value">{{ formatTime(order.createTime) }}</span>
-        </div>
-        <div v-if="order.completeTime" class="info-item">
-          <span class="label">完成时间</span>
-          <span class="value">{{ formatTime(order.completeTime) }}</span>
-        </div>
-      </div>
+      <!-- 交易信息 -->
+      <van-cell-group title="交易信息">
+        <van-cell title="交易类型" :value="order.type" />
+        <van-cell title="游戏" :value="order.game" v-if="order.game" />
+        <van-cell title="交易金额" :value="`¥${order.amount}`" value-class="amount" />
+        <van-cell title="担保费用" :value="`¥${order.guaranteeFee || '0.00'}`" />
+        <van-cell title="加急费用" :value="`¥${order.urgencyFee || '0.00'}`" v-if="order.urgencyFee && order.urgencyFee > 0" />
+        <van-cell title="总金额" :value="`¥${order.totalAmount || order.amount}`" value-class="total-amount" />
+        <van-cell title="创建时间" :value="formatDate(order.createdAt)" />
+        <van-cell title="完成时限" :value="formatDeadline(order.deadline)" v-if="order.deadline" />
+        <van-cell title="紧急程度" :value="`${order.urgency || 3}/5`" v-if="order.urgency" />
+        <van-cell title="预计工作时长" :value="`${order.estimatedHours || 0}小时`" v-if="order.estimatedHours" />
+        <van-cell title="剩余时间" :value="getTimeRemaining(order.deadline)" v-if="order.deadline && order.status === 'processing'" />
+      </van-cell-group>
+
+      <!-- 交易描述 -->
+      <van-cell-group title="交易描述">
+        <van-cell>
+          <template #title>
+            <div class="description">{{ order.description }}</div>
+          </template>
+        </van-cell>
+      </van-cell-group>
 
       <!-- 交易双方 -->
-      <div class="participants-card card">
-        <h3>交易双方</h3>
-        <div class="participant-item">
-          <div class="participant-header">
-            <img :src="order.buyer.avatar" :alt="order.buyer.name" class="avatar" />
-            <div class="user-info">
-              <div class="name">{{ order.buyer.name }}</div>
-              <div class="role">买家</div>
+      <van-cell-group title="交易双方">
+        <van-cell>
+          <template #title>
+            <div class="party-info">
+              <div class="party-label">发起方</div>
+              <div class="party-user">
+                <van-image
+                  :src="order.initiator.avatar"
+                  width="40"
+                  height="40"
+                  round
+                />
+                <div class="user-details">
+                  <div class="user-name">{{ order.initiator.name }}</div>
+                  <div class="user-rating">信誉分: {{ order.initiator.rating || 95 }}</div>
+                </div>
+              </div>
             </div>
-            <van-button size="small" @click="chatWithUser(order.buyer.id)">私信</van-button>
-          </div>
-        </div>
-        <div class="participant-item">
-          <div class="participant-header">
-            <img :src="order.seller.avatar" :alt="order.seller.name" class="avatar" />
-            <div class="user-info">
-              <div class="name">{{ order.seller.name }}</div>
-              <div class="role">卖家</div>
-            </div>
-            <van-button size="small" @click="chatWithUser(order.seller.id)">私信</van-button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 担保信息 -->
-      <div class="guarantee-card card">
-        <h3>担保信息</h3>
-        <div class="guarantee-info">
-          <div class="info-item">
-            <span class="label">交易金额</span>
-            <span class="value price">¥{{ order.price.toFixed(2) }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">平台服务费</span>
-            <span class="value">¥{{ (order.price * 0.05).toFixed(2) }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">担保状态</span>
-            <span class="value text-success">资金已冻结</span>
-          </div>
-        </div>
-      </div>
+          </template>
+        </van-cell>
+      </van-cell-group>
 
       <!-- 操作按钮 -->
-      <div class="action-buttons card">
-        <van-button v-if="order.status === '待确认'" type="primary" block @click="confirmOrder">
+      <div class="action-buttons" v-if="order.status === 'pending'">
+        <van-button type="success" size="large" block @click="confirmOrder">
+          确认交易
+        </van-button>
+        <van-button type="danger" size="large" block plain @click="cancelOrder" style="margin-top: 12px;">
+          取消交易
+        </van-button>
+      </div>
+
+      <div class="action-buttons" v-else-if="order.status === 'processing'">
+        <van-button type="primary" size="large" block @click="completeOrder">
           确认完成
         </van-button>
-        <van-button v-if="order.status === '进行中'" type="warning" block @click="disputeOrder">
+        <van-button type="warning" size="large" block plain @click="disputeOrder" style="margin-top: 12px;">
           申请仲裁
         </van-button>
-        <van-button v-if="order.status === '纠纷中'" type="danger" block @click="contactSupport">
-          联系客服
+      </div>
+
+      <div class="action-buttons" v-else-if="order.status === 'completed'">
+        <van-button type="primary" size="large" block @click="createNewOrder">
+          再次发起担保
         </van-button>
-        <van-button plain block @click="viewChatHistory">查看聊天记录</van-button>
       </div>
     </div>
+
+    <!-- 空状态 -->
+    <van-empty 
+      v-else 
+      description="订单不存在"
+      image="https://picsum.photos/seed/order-not-found/200/200.jpg"
+    >
+      <van-button type="primary" @click="$router.push('/orders')">
+        返回订单列表
+      </van-button>
+    </van-empty>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { showToast, showConfirmDialog } from 'vant'
 
-const route = useRoute()
 const router = useRouter()
-
+const route = useRoute()
 const order = ref(null)
 
-onMounted(() => {
+// 获取订单详情
+const loadOrderDetail = () => {
   const orderId = route.params.id
-  loadOrderDetail(orderId)
-})
-
-const loadOrderDetail = (orderId) => {
-  // 模拟加载订单详情
-  order.value = {
-    id: 'ORD20240115001',
-    type: '代肝服务',
-    game: '王者荣耀',
-    status: '进行中',
-    statusText: '进行中',
-    statusColor: 'primary',
-    content: '星耀段位代练上王者，要求效率高，账号安全第一',
-    price: 150.00,
-    createTime: '2024-01-15 10:30:00',
-    deadline: '2024-01-20 23:59:59',
-    buyer: {
-      id: 1,
-      name: '游戏小王',
-      avatar: 'https://picsum.photos/seed/buyer1/40/40.jpg'
-    },
-    seller: {
-      id: 2,
-      name: '代练达人',
-      avatar: 'https://picsum.photos/seed/seller1/40/40.jpg'
+  const orders = JSON.parse(localStorage.getItem('orders') || '[]')
+  const foundOrder = orders.find(o => o.id === orderId)
+  
+  if (foundOrder) {
+    order.value = foundOrder
+  } else {
+    // 尝试从sessionStorage获取（刚创建的订单）
+    const guaranteeGroup = sessionStorage.getItem('guaranteeGroup')
+    if (guaranteeGroup) {
+      const group = JSON.parse(guaranteeGroup)
+      if (group.id === orderId) {
+        order.value = group
+      }
     }
   }
 }
 
-const getStatusDescription = (status) => {
-  const descriptions = {
-    '待付款': '等待双方付款到担保账户',
-    '进行中': '双方已付款，服务正在进行中',
-    '待确认': '服务已完成，等待买家确认',
-    '已完成': '交易成功完成，资金已结算',
-    '纠纷中': '产生纠纷，客服介入处理',
-    '已取消': '交易已取消'
-  }
-  return descriptions[status] || ''
-}
-
+// 确认订单
 const confirmOrder = async () => {
   try {
     await showConfirmDialog({
-      title: '确认完成',
-      message: '确认订单已完成？确认后资金将结算给卖家。',
+      title: '确认交易',
+      message: '确认接受此担保交易？确认后交易将正式开始。',
     })
-    showToast('确认成功')
-    order.value.status = '已完成'
-    order.value.statusText = '已完成'
-    order.value.statusColor = 'success'
-    order.value.completeTime = new Date().toISOString()
+    
+    // 更新订单状态
+    const orders = JSON.parse(localStorage.getItem('orders') || '[]')
+    const orderIndex = orders.findIndex(o => o.id === order.value.id)
+    
+    if (orderIndex !== -1) {
+      orders[orderIndex].status = 'processing'
+      orders[orderIndex].confirmedAt = new Date().toISOString()
+      localStorage.setItem('orders', JSON.stringify(orders))
+      order.value.status = 'processing'
+      showToast('交易确认成功')
+    }
   } catch {
     // 用户取消
   }
 }
 
-const disputeOrder = async () => {
+// 取消订单
+const cancelOrder = async () => {
   try {
     await showConfirmDialog({
-      title: '申请仲裁',
-      message: '确定要申请仲裁吗？客服将介入处理。',
+      title: '取消交易',
+      message: '确认取消此担保交易？取消后无法恢复。',
     })
-    showToast('仲裁申请已提交')
-    order.value.status = '纠纷中'
-    order.value.statusText = '纠纷中'
-    order.value.statusColor = 'danger'
+    
+    // 更新订单状态
+    const orders = JSON.parse(localStorage.getItem('orders') || '[]')
+    const orderIndex = orders.findIndex(o => o.id === order.value.id)
+    
+    if (orderIndex !== -1) {
+      orders[orderIndex].status = 'cancelled'
+      orders[orderIndex].cancelledAt = new Date().toISOString()
+      localStorage.setItem('orders', JSON.stringify(orders))
+      order.value.status = 'cancelled'
+      showToast('交易已取消')
+    }
   } catch {
     // 用户取消
   }
 }
 
-const contactSupport = () => {
-  router.push('/support')
+// 完成订单
+const completeOrder = async () => {
+  try {
+    await showConfirmDialog({
+      title: '确认完成',
+      message: '确认交易已完成？确认后平台将释放资金给卖家。',
+    })
+    
+    // 更新订单状态
+    const orders = JSON.parse(localStorage.getItem('orders') || '[]')
+    const orderIndex = orders.findIndex(o => o.id === order.value.id)
+    
+    if (orderIndex !== -1) {
+      orders[orderIndex].status = 'completed'
+      orders[orderIndex].completedAt = new Date().toISOString()
+      localStorage.setItem('orders', JSON.stringify(orders))
+      order.value.status = 'completed'
+      showToast('交易已完成')
+    }
+  } catch {
+    // 用户取消
+  }
 }
 
-const chatWithUser = (userId) => {
-  router.push(`/chat/${userId}`)
+// 申请仲裁
+const disputeOrder = () => {
+  showToast('仲裁功能开发中...')
 }
 
-const viewChatHistory = () => {
-  router.push(`/chat/order/${order.value.id}`)
+// 创建新订单
+const createNewOrder = () => {
+  router.push('/orders/create')
 }
 
-const formatTime = (time) => {
-  const date = new Date(time)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+// 获取状态图标
+const getStatusIcon = (status) => {
+  const iconMap = {
+    pending: 'clock-o',
+    processing: 'play-circle-o',
+    completed: 'success',
+    cancelled: 'cross'
+  }
+  return iconMap[status] || 'info-o'
 }
+
+// 获取状态颜色
+const getStatusColor = (status) => {
+  const colorMap = {
+    pending: '#ff976a',
+    processing: '#1989fa',
+    completed: '#07c160',
+    cancelled: '#ee0a24'
+  }
+  return colorMap[status] || '#909399'
+}
+
+// 获取状态文本
+const getStatusText = (status) => {
+  const textMap = {
+    pending: '待确认',
+    processing: '进行中',
+    completed: '已完成',
+    cancelled: '已取消'
+  }
+  return textMap[status] || '未知'
+}
+
+// 格式化日期
+const formatDate = (dateString) => {
+  if (!dateString) return '未设置'
+  const date = new Date(dateString)
+  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString().slice(0, 5)
+}
+
+// 格式化截止时间
+const formatDeadline = (deadlineString) => {
+  if (!deadlineString) return '未设置'
+  
+  const deadline = new Date(deadlineString)
+  const now = new Date()
+  const diff = deadline.getTime() - now.getTime()
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const days = Math.floor(hours / 24)
+  
+  if (days > 0) {
+    return `${days}天${hours % 24}小时后 (${formatDate(deadlineString)})`
+  } else if (hours > 0) {
+    return `${hours}小时后 (${formatDate(deadlineString)})`
+  } else {
+    return `即将到期 (${formatDate(deadlineString)})`
+  }
+}
+
+// 获取剩余时间
+const getTimeRemaining = (deadlineString) => {
+  if (!deadlineString) return '未设置'
+  
+  const deadline = new Date(deadlineString)
+  const now = new Date()
+  const diff = deadline.getTime() - now.getTime()
+  
+  if (diff <= 0) {
+    return '<span style="color: #ee0a24;">已过期</span>'
+  }
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const days = Math.floor(hours / 24)
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  
+  if (days > 0) {
+    return `${days}天${hours % 24}小时${minutes}分钟`
+  } else if (hours > 0) {
+    return `${hours}小时${minutes}分钟`
+  } else {
+    return `${minutes}分钟`
+  }
+}
+
+onMounted(() => {
+  loadOrderDetail()
+})
 </script>
 
 <style lang="scss" scoped>
 .order-detail {
-  padding-top: 0;
+  background: #f7f8fa;
+  min-height: 100vh;
+}
+
+.detail-content {
+  padding: 12px;
 }
 
 .status-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 12px;
   text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   
   .status-header {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    margin-bottom: 8px;
+    gap: 8px;
+    margin-bottom: 12px;
     
-    .order-id {
-      font-size: 14px;
-      color: #969799;
-    }
-  }
-  
-  .status-desc {
-    font-size: 14px;
-    color: #646566;
-  }
-}
-
-.info-card, .participants-card, .guarantee-card, .action-buttons {
-  margin-top: 12px;
-  
-  h3 {
-    margin: 0 0 16px 0;
-    font-size: 16px;
-    font-weight: 600;
-  }
-}
-
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  font-size: 14px;
-  
-  .label {
-    color: #969799;
-  }
-  
-  .value {
-    color: #323233;
-    
-    &.price {
-      font-size: 16px;
+    .status-text {
+      font-size: 18px;
       font-weight: 600;
-      color: #ee0a24;
     }
-    
-    &.text-success {
-      color: #07c160;
-    }
+  }
+  
+  .order-title {
+    font-size: 16px;
+    color: #323233;
+    line-height: 1.5;
   }
 }
 
-.participant-item {
-  margin-bottom: 16px;
-  
-  &:last-child {
-    margin-bottom: 0;
+.description {
+  color: #646566;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.party-info {
+  .party-label {
+    font-size: 14px;
+    color: #969799;
+    margin-bottom: 8px;
   }
   
-  .participant-header {
+  .party-user {
     display: flex;
     align-items: center;
     gap: 12px;
     
-    .avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-    }
-    
-    .user-info {
-      flex: 1;
-      
-      .name {
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 4px;
+    .user-details {
+      .user-name {
+        font-size: 16px;
+        font-weight: 500;
+        color: #323233;
+        margin-bottom: 2px;
       }
       
-      .role {
+      .user-rating {
         font-size: 12px;
-        color: #969799;
+        color: #666;
       }
     }
   }
 }
 
 .action-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  margin: 24px 12px;
+}
+
+:deep(.amount) {
+  color: #ee0a24;
+  font-weight: 600;
+}
+
+:deep(.total-amount) {
+  color: #ee0a24;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+// 响应式设计
+@media (max-width: 375px) {
+  .detail-content {
+    padding: 8px;
+  }
   
-  .van-button {
-    margin: 0;
+  .action-buttons {
+    margin: 20px 8px;
   }
 }
 </style>

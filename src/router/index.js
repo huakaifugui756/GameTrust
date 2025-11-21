@@ -115,6 +115,12 @@ const routes = [
     name: 'Search',
     component: () => import('@/views/Search.vue'),
     meta: { title: '搜索' }
+  },
+  {
+    path: '/services',
+    name: 'Services',
+    component: () => import('@/views/Services.vue'),
+    meta: { title: '推荐服务' }
   }
 ]
 

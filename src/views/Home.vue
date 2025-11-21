@@ -184,12 +184,17 @@ const quickEntries = ref([
   {
     name: '发起担保',
     icon: 'shield-o',
-    onClick: () => router.push('/orders/create')
-  },
-  {
-    name: '需求大厅',
-    icon: 'apps-o',
-    onClick: () => router.push('/demands')
+    onClick: () => {
+      // 设置一个默认的交易对象（模拟）
+      const defaultUser = {
+        id: 1,
+        name: '推荐代练师',
+        avatar: 'https://picsum.photos/seed/default-user/40/40.jpg',
+        rating: 95
+      }
+      sessionStorage.setItem('orderUserInfo', JSON.stringify(defaultUser))
+      router.push('/orders/create')
+    }
   },
   {
     name: '客服中心',

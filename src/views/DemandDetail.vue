@@ -66,7 +66,7 @@
           <div class="publisher-details">
             <div class="name">{{ demand.publisher?.name || '匿名用户' }}</div>
             <div class="rating">
-              <van-rate v-model="demand.publisher?.rating || 5" readonly size="12" />
+              <van-rate :model-value="demand.publisher?.rating || 5" readonly size="12" />
               <span>{{ demand.publisher?.rating || 5.0 }}</span>
             </div>
           </div>
@@ -229,7 +229,7 @@ const contactPublisher = () => {
 
 const acceptDemand = async () => {
   try {
-    await showToast({
+    showToast({
       type: 'loading',
       message: '接单中...',
       forbidClick: true,
