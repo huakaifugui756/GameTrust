@@ -38,24 +38,25 @@ const routes = [
     component: () => import('@/views/CreateOrder.vue'),
     meta: { title: '创建订单' }
   },
-  {
-    path: '/demand/create',
-    name: 'CreateDemand',
-    component: () => import('@/views/CreateDemand.vue'),
-    meta: { title: '发布需求' }
-  },
-  {
-    path: '/demand/:id',
-    name: 'DemandDetail',
-    component: () => import('@/views/DemandDetail.vue'),
-    meta: { title: '需求详情' }
-  },
-  {
-    path: '/demands',
-    name: 'DemandList',
-    component: () => import('@/views/DemandList.vue'),
-    meta: { title: '需求大厅' }
-  },
+  // 需求相关功能暂时隐藏
+  // {
+  //   path: '/demand/create',
+  //   name: 'CreateDemand',
+  //   component: () => import('@/views/CreateDemand.vue'),
+  //   meta: { title: '发布需求' }
+  // },
+  // {
+  //   path: '/demand/:id',
+  //   name: 'DemandDetail',
+  //   component: () => import('@/views/DemandDetail.vue'),
+  //   meta: { title: '需求详情' }
+  // },
+  // {
+  //   path: '/demands',
+  //   name: 'DemandList',
+  //   component: () => import('@/views/DemandList.vue'),
+  //   meta: { title: '需求大厅' }
+  // },
   {
     path: '/order/:id',
     name: 'OrderDetail',

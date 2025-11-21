@@ -27,16 +27,13 @@
       </div>
       
       <div class="action-buttons">
-        <van-button type="primary" size="small" @click="createDemand">发布需求</van-button>
         <van-button type="warning" size="small" @click="createOrder">发起担保</van-button>
       </div>
     </div>
 
     <!-- 功能入口 -->
-    <van-grid :column-num="4" :border="false" class="feature-grid">
-      <van-grid-item icon="chat-o" text="聊天室" @click="enterChatRoom" />
+    <van-grid :column-num="2" :border="false" class="feature-grid">
       <van-grid-item icon="friends-o" text="联系人" @click="showContacts" />
-      <van-grid-item icon="bookmark-o" text="帖子专区" @click="showPosts" />
       <van-grid-item icon="user-o" text="个人中心" @click="$router.push('/profile')" />
     </van-grid>
 
@@ -57,8 +54,8 @@
       </div>
     </div>
 
-    <!-- 最新帖子 -->
-    <div class="latest-posts section">
+    <!-- 最新帖子暂时隐藏 -->
+    <!-- <div class="latest-posts section">
       <h3>最新帖子</h3>
       <div class="post-list">
         <div v-for="post in latestPosts" :key="post.id" class="post-item card" @click="viewPost(post.id)">
@@ -87,29 +84,9 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
 
-    <!-- 发布帖子弹窗 -->
-    <van-dialog v-model:show="postDialogVisible" :title="`发布${postType}`" show-cancel-button>
-      <div class="post-form">
-        <van-field
-          v-model="postContent"
-          type="textarea"
-          :placeholder="`请输入${postType}内容...`"
-          rows="4"
-          autosize
-        />
-        <van-field
-          v-model="postPrice"
-          placeholder="价格（可选）"
-          v-if="postType === '服务'"
-        />
-      </div>
-      <template #footer>
-        <van-button size="small" @click="postDialogVisible = false">取消</van-button>
-        <van-button type="primary" size="small" @click="submitPost">发布</van-button>
-      </template>
-    </van-dialog>
+
   </div>
 </template>
 
@@ -124,12 +101,6 @@ const router = useRouter()
 const game = ref({})
 
 const chatRooms = ref([
-  {
-    id: 1,
-    name: '综合交流群',
-    description: '游戏交流、组队开黑',
-    onlineCount: 2341
-  },
   {
     id: 2,
     name: '代练交易群',
@@ -173,10 +144,7 @@ const latestPosts = ref([
   }
 ])
 
-const postDialogVisible = ref(false)
-const postType = ref('')
-const postContent = ref('')
-const postPrice = ref('')
+
 
 onMounted(() => {
   const gameId = route.params.id
@@ -215,29 +183,8 @@ const loadGameDetail = (gameId) => {
   }
 }
 
-const showPostDialog = (type) => {
-  postType.value = type
-  postContent.value = ''
-  postPrice.value = ''
-  postDialogVisible.value = true
-}
-
-const submitPost = () => {
-  if (!postContent.value.trim()) {
-    showToast('请输入内容')
-    return
-  }
-  
-  showToast('发布成功')
-  postDialogVisible.value = false
-}
-
 const createOrder = () => {
   router.push('/orders/create')
-}
-
-const createDemand = () => {
-  router.push('/demand/create')
 }
 
 const enterChatRoom = (roomId) => {
@@ -283,13 +230,7 @@ const showContacts = () => {
   showToast('联系人功能')
 }
 
-const showPosts = () => {
-  router.push('/community')
-}
 
-const viewPost = (postId) => {
-  router.push(`/community/post/${postId}`)
-}
 
 const formatTime = (time) => {
   const date = new Date(time)

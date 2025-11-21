@@ -207,7 +207,7 @@ const quickEntries = ref([
 const stats = ref({
   totalUsers: '12.5K',
   totalOrders: '8.9K',
-  totalGames: '50+',
+  totalGames: '2',
   successRate: 99.8
 })
 
@@ -230,24 +230,6 @@ const hotGames = ref([
     price: '20-80',
     orderCount: 856,
     isHot: true
-  },
-  {
-    id: 3,
-    name: '和平精英',
-    description: '战术竞技手游',
-    image: 'https://picsum.photos/seed/game3/200/120.jpg',
-    price: '10-40',
-    orderCount: 623,
-    isHot: false
-  },
-  {
-    id: 4,
-    name: '原神',
-    description: '开放世界冒险游戏',
-    image: 'https://picsum.photos/seed/game4/200/120.jpg',
-    price: '25-100',
-    orderCount: 445,
-    isHot: false
   }
 ])
 
