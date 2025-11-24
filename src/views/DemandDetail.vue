@@ -93,11 +93,11 @@
 
       <!-- 互动数据 -->
       <div class="interaction-stats card">
-        <div class="stat-item" @click="showLikes = true">
+        <div class="stat-item">
           <van-icon name="good-job-o" />
           <span>{{ demand.likes || 0 }}</span>
         </div>
-        <div class="stat-item" @click="showComments = true">
+        <div class="stat-item">
           <van-icon name="chat-o" />
           <span>{{ demand.comments || 0 }}</span>
         </div>
@@ -420,7 +420,6 @@ onMounted(() => {
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    cursor: pointer;
     
     .van-icon {
       font-size: 20px;

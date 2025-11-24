@@ -1,5 +1,23 @@
 <template>
   <div class="profile page-container">
+    <!-- 导航栏 -->
+    <van-nav-bar 
+      title="个人中心" 
+      class="profile-nav"
+    >
+      <template #right>
+        <van-button 
+          size="small" 
+          type="danger" 
+          plain 
+          @click="logout"
+          class="logout-btn"
+        >
+          退出登录
+        </van-button>
+      </template>
+    </van-nav-bar>
+
     <!-- 用户信息卡片 -->
     <div class="user-card">
       <div class="user-info">
@@ -30,27 +48,7 @@
       </div>
     </div>
 
-    <!-- 钱包信息 -->
-    <div class="wallet-card card">
-      <div class="wallet-header">
-        <h4>我的钱包</h4>
-        <van-button size="small" @click="$router.push('/wallet')">详情</van-button>
-      </div>
-      <div class="wallet-balance">
-        <div class="balance-item">
-          <span class="label">可用余额</span>
-          <span class="value">¥{{ wallet.balance.toFixed(2) }}</span>
-        </div>
-        <div class="balance-item">
-          <span class="label">冻结资金</span>
-          <span class="value">¥{{ wallet.frozen.toFixed(2) }}</span>
-        </div>
-      </div>
-      <div class="wallet-actions">
-        <van-button type="primary" size="small" @click="recharge">充值</van-button>
-        <van-button type="default" size="small" @click="withdraw">提现</van-button>
-      </div>
-    </div>
+
 
     <!-- 功能菜单 -->
     <div class="menu-list">
@@ -72,10 +70,6 @@
         <van-cell title="联系客服" is-link @click="contactSupport" />
         <van-cell title="关于我们" is-link @click="$router.push('/about')" />
       </van-cell-group>
-      
-      <van-cell-group>
-        <van-cell title="退出登录" @click="logout" />
-      </van-cell-group>
     </div>
   </div>
 </template>
@@ -84,8 +78,10 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast, showConfirmDialog } from 'vant'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const userInfo = ref({
   id: 1,
@@ -98,10 +94,7 @@ const userInfo = ref({
   verified: false
 })
 
-const wallet = ref({
-  balance: 568.50,
-  frozen: 150.00
-})
+
 
 onMounted(() => {
   loadUserInfo()
@@ -109,20 +102,16 @@ onMounted(() => {
 
 const loadUserInfo = () => {
   // 加载用户信息
-  console.log('加载用户信息')
+  if (authStore.user) {
+    userInfo.value = { ...userInfo.value, ...authStore.user }
+  }
 }
 
 const editProfile = () => {
   router.push('/profile/edit')
 }
 
-const recharge = () => {
-  router.push('/wallet/recharge')
-}
 
-const withdraw = () => {
-  router.push('/wallet/withdraw')
-}
 
 const goToVerification = () => {
   if (!userInfo.value.verified) {
@@ -140,6 +129,9 @@ const logout = async () => {
       title: '退出登录',
       message: '确定要退出登录吗？',
     })
+    if (authStore && authStore.logout) {
+      authStore.logout()
+    }
     showToast('退出成功')
     router.push('/login')
   } catch {
@@ -151,6 +143,33 @@ const logout = async () => {
 <style lang="scss" scoped>
 .profile {
   padding-top: 0;
+  background: #f7f8fa;
+  min-height: 100vh;
+  padding-bottom: 60px; // 为底部导航栏留出空间
+}
+
+.profile-nav {
+  background: linear-gradient(135deg, #1989fa 0%, #1c7ed6 100%);
+  color: white;
+  
+  :deep(.van-nav-bar__title) {
+    color: white;
+    font-weight: 600;
+  }
+  
+  .logout-btn {
+    color: #ff4d4f;
+    border-color: rgba(255, 77, 79, 0.3);
+    background: rgba(255, 77, 79, 0.1);
+    font-size: 12px;
+    padding: 4px 12px;
+    height: 28px;
+    
+    &:hover {
+      background: rgba(255, 77, 79, 0.2);
+      border-color: rgba(255, 77, 79, 0.5);
+    }
+  }
 }
 
 .user-card {
@@ -219,51 +238,11 @@ const logout = async () => {
   }
 }
 
-.wallet-card {
-  margin: 16px;
-  
-  .wallet-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    
-    h4 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-    }
-  }
-  
-  .wallet-balance {
-    margin-bottom: 16px;
-    
-    .balance-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-      
-      .label {
-        font-size: 14px;
-        color: #969799;
-      }
-      
-      .value {
-        font-size: 16px;
-        font-weight: 600;
-        color: #323233;
-      }
-    }
-  }
-  
-  .wallet-actions {
-    display: flex;
-    gap: 12px;
-  }
-}
+
 
 .menu-list {
+  margin-top: 16px;
+  
   .van-cell-group {
     margin-bottom: 12px;
   }

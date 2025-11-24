@@ -64,12 +64,6 @@ const routes = [
     meta: { title: '订单详情' }
   },
   {
-    path: '/profile',
-    name: 'Profile',
-    component: () => import('@/views/Profile.vue'),
-    meta: { title: '我的', requiresAuth: true }
-  },
-  {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/Login.vue'),
@@ -106,7 +100,13 @@ const routes = [
     meta: { title: '好友', requiresAuth: true }
   },
   {
-    path: '/profile/:id?',
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('@/views/Profile.vue'),
+    meta: { title: '我的', requiresAuth: true }
+  },
+  {
+    path: '/user/:id',
     name: 'UserProfile',
     component: () => import('@/views/UserProfile.vue'),
     meta: { title: '用户资料' }

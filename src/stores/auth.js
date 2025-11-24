@@ -60,6 +60,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // 在store创建时自动初始化
+  initUser()
+
   // 更新用户信息
   const updateUser = (newUserData) => {
     user.value = { ...user.value, ...newUserData }

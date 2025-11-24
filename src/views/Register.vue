@@ -100,15 +100,9 @@ const validatePhone = (value) => {
 
 
 
-const onSubmit = async () => {
+const onSubmit = async (values) => {
   if (!agreeTerms.value) {
     showToast('请先同意用户协议和隐私政策')
-    return
-  }
-  
-  // 验证手机号格式
-  if (validatePhone(form.value.phone) !== true) {
-    showToast('请输入正确的手机号')
     return
   }
   
@@ -116,13 +110,17 @@ const onSubmit = async () => {
   
   try {
     const result = await authStore.register({
-      phone: form.value.phone,
-      password: form.value.password
+      phone: values.phone,
+      password: values.password
     })
     
     if (result.success) {
       showSuccessToast('注册成功，请登录')
-      router.push('/login')
+      // 注册成功后自动填充登录表单
+      router.push({
+        path: '/login',
+        query: { phone: values.phone }
+      })
     } else {
       showFailToast(result.error || '注册失败')
     }

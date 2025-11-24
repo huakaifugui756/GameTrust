@@ -23,8 +23,8 @@ app.use(pinia)
 app.use(router)
 app.use(Vant)
 
-// 初始化认证状态
+// 检查认证状态
 const authStore = useAuthStore()
-authStore.initUser()
+authStore.checkAuthStatus()
 
 app.mount('#app')

@@ -13,7 +13,10 @@
             name="phone"
             label="手机号"
             placeholder="请输入手机号"
-            :rules="[{ required: true, message: '请输入手机号' }]"
+            :rules="[
+              { required: true, message: '请输入手机号' },
+              { validator: validatePhone, message: '请输入正确的手机号' }
+            ]"
           />
           <van-field
             v-model="form.password"
@@ -21,7 +24,10 @@
             name="password"
             label="密码"
             placeholder="请输入密码"
-            :rules="[{ required: true, message: '请输入密码' }]"
+            :rules="[
+              { required: true, message: '请输入密码' },
+              { pattern: /^.{6,20}$/, message: '密码长度为6-20位' }
+            ]"
           />
         </van-cell-group>
         
@@ -63,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast, showSuccessToast, showFailToast } from 'vant'
 import { useAuthStore } from '@/stores/auth'
@@ -77,18 +83,29 @@ const form = ref({
   password: ''
 })
 
-const onSubmit = async () => {
-  if (!form.value.phone || !form.value.password) {
-    showToast('请填写完整信息')
-    return
+// 页面加载时检查是否有预填充的手机号
+onMounted(() => {
+  const phone = router.currentRoute.value.query.phone
+  if (phone) {
+    form.value.phone = phone
   }
-  
+})
+
+const validatePhone = (value) => {
+  const phoneRegex = /^1[3-9]\d{9}$/
+  if (!phoneRegex.test(value)) {
+    return '请输入正确的手机号'
+  }
+  return true
+}
+
+const onSubmit = async (values) => {
   loading.value = true
   
   try {
     const result = await authStore.login({
-      phone: form.value.phone,
-      password: form.value.password
+      phone: values.phone,
+      password: values.password
     })
     
     if (result.success) {

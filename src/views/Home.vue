@@ -9,9 +9,14 @@
         background="transparent"
         @search="onSearch"
       />
-      <div class="location-info">
-        <van-icon name="location-o" />
-        <span>当前位置</span>
+      <div class="header-actions">
+        <div class="location-info">
+          <van-icon name="location-o" />
+          <span>当前位置</span>
+        </div>
+        <van-button size="small" type="primary" @click="goToAuth" class="login-btn">
+          {{ authStore.isLoggedIn ? '个人中心' : '登录/注册' }}
+        </van-button>
       </div>
     </div>
 
@@ -154,10 +159,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const searchValue = ref('')
 
 // 轮播图数据
@@ -291,9 +298,16 @@ const onSearch = (value) => {
   }
 }
 
-const viewService = (serviceId) => {
-  // 暂时跳转到需求详情页面
-  router.push(`/demand/${serviceId}`)
+const goToAuth = () => {
+  if (authStore.isLoggedIn) {
+    router.push('/profile')
+  } else {
+    router.push('/login')
+  }
+}
+
+const viewService = (id) => {
+  router.push(`/services/${id}`)
 }
 </script>
 
@@ -318,19 +332,35 @@ const viewService = (serviceId) => {
     }
   }
   
+  .header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+  }
+  
   .location-info {
-    position: absolute;
-    right: 16px;
-    top: 50%;
-    transform: translateY(-50%);
     display: flex;
     align-items: center;
     gap: 4px;
-    color: white;
+    color: rgba(255, 255, 255, 0.9);
     font-size: 12px;
     
     .van-icon {
       font-size: 14px;
+    }
+  }
+  
+  .login-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 12px;
+    padding: 4px 12px;
+    height: 28px;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
     }
   }
 }

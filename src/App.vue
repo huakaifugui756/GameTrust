@@ -8,7 +8,7 @@
       <van-tabbar-item to="/games" icon="apps-o">游戏</van-tabbar-item>
       <van-tabbar-item to="/friends" icon="friends-o" :badge="friendRequests > 0 ? friendRequests : ''">好友</van-tabbar-item>
       <van-tabbar-item to="/messages" icon="chat-o" :badge="unreadCount > 0 ? unreadCount : ''">消息</van-tabbar-item>
-      <van-tabbar-item to="/profile/me" icon="user-o">我的</van-tabbar-item>
+      <van-tabbar-item to="/profile" icon="user-o">我的</van-tabbar-item>
     </van-tabbar>
   </div>
 </template>
