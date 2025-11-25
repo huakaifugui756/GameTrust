@@ -20,7 +20,10 @@
       <div class="user-info">
         <img :src="userInfo.avatar" :alt="userInfo.name" class="avatar" />
         <div class="info">
-          <h3>{{ userInfo.name }}</h3>
+          <div class="name-section">
+            <h3>{{ userInfo.name }}</h3>
+            <van-tag v-if="userInfo.isAdmin" type="danger" size="small">管理员</van-tag>
+          </div>
           <div class="reputation">
             <van-rate
               v-model="userInfo.reputation"
@@ -82,6 +85,30 @@
         />
       </van-cell-group>
 
+      <!-- 管理员专属功能 -->
+      <van-cell-group v-if="userInfo.isAdmin">
+        <van-cell title="用户管理" is-link @click="goToUserManagement">
+          <template #icon>
+            <van-icon name="manager-o" color="#1989fa" />
+          </template>
+        </van-cell>
+        <van-cell title="订单审核" is-link @click="goToOrderReview">
+          <template #icon>
+            <van-icon name="orders-o" color="#07c160" />
+          </template>
+        </van-cell>
+        <van-cell title="系统设置" is-link @click="goToSystemSettings">
+          <template #icon>
+            <van-icon name="setting-o" color="#ff976a" />
+          </template>
+        </van-cell>
+        <van-cell title="数据统计" is-link @click="goToDataStats">
+          <template #icon>
+            <van-icon name="chart-trending-o" color="#7232dd" />
+          </template>
+        </van-cell>
+      </van-cell-group>
+
       <van-cell-group>
         <van-cell title="帮助中心" is-link @click="$router.push('/help')" />
         <van-cell title="联系客服" is-link @click="contactSupport" />
@@ -118,7 +145,11 @@ onMounted(() => {
 const loadUserInfo = () => {
   // 加载用户信息
   if (authStore.user) {
-    userInfo.value = { ...userInfo.value, ...authStore.user };
+    userInfo.value = { 
+      ...userInfo.value, 
+      ...authStore.user,
+      isAdmin: authStore.user.isAdmin || false
+    };
   }
 };
 
@@ -150,6 +181,23 @@ const logout = async () => {
   } catch {
     // 用户取消
   }
+};
+
+// 管理员功能
+const goToUserManagement = () => {
+  router.push('/admin/dashboard');
+};
+
+const goToOrderReview = () => {
+  router.push('/admin/dashboard');
+};
+
+const goToSystemSettings = () => {
+  router.push('/admin/dashboard');
+};
+
+const goToDataStats = () => {
+  router.push('/admin/dashboard');
 };
 </script>
 
@@ -210,6 +258,19 @@ const logout = async () => {
         margin: 0 0 8px 0;
         font-size: 20px;
         font-weight: 600;
+      }
+
+      .name-section {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+
+        h3 {
+          margin: 0;
+          font-size: 20px;
+          font-weight: 600;
+        }
       }
 
       .reputation {

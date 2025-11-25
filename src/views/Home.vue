@@ -114,66 +114,7 @@
       </div>
     </div>
 
-    <!-- 推荐服务 -->
-    <div class="section">
-      <div class="section-header flex-between">
-        <div class="section-title">
-          <van-icon name="star-o" class="title-icon" />
-          <h3>推荐服务</h3>
-        </div>
-        <van-button
-          type="primary"
-          size="small"
-          plain
-          @click="$router.push('/services')"
-        >
-          查看更多
-          <van-icon name="arrow" />
-        </van-button>
-      </div>
-      <div class="service-list">
-        <div
-          v-for="service in recommendServices"
-          :key="service.id"
-          class="service-item card"
-          @click="viewService(service.id)"
-        >
-          <div class="service-header">
-            <img
-              :src="service.provider.avatar"
-              :alt="service.provider.name"
-              class="provider-avatar"
-            />
-            <div class="provider-info">
-              <div class="provider-name">{{ service.provider.name }}</div>
-              <div class="provider-rating">
-                <van-rate
-                  v-model="service.provider.rating"
-                  readonly
-                  size="12"
-                />
-                <span class="rating-text">{{ service.provider.rating }}</span>
-              </div>
-            </div>
-            <van-tag type="success" size="small">{{ service.type }}</van-tag>
-          </div>
-          <div class="service-content">
-            <h4>{{ service.title }}</h4>
-            <p>{{ service.description }}</p>
-          </div>
-          <div class="service-footer">
-            <div class="service-price">
-              <span class="price-label">起步价</span>
-              <span class="price-value">¥{{ service.price }}</span>
-            </div>
-            <div class="service-stats">
-              <span class="stat-item">{{ service.completedCount }}完成</span>
-              <span class="stat-item">{{ service.responseTime }}响应</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+
 
     <!-- 安全保障 -->
     <div class="security-section card">
@@ -226,21 +167,6 @@ const banners = ref([
 // 快捷入口
 const quickEntries = ref([
   {
-    name: "发起担保",
-    icon: "shield-o",
-    onClick: () => {
-      // 设置一个默认的交易对象（模拟）
-      const defaultUser = {
-        id: 1,
-        name: "推荐代练师",
-        avatar: "https://picsum.photos/seed/default-user/40/40.jpg",
-        rating: 95,
-      };
-      sessionStorage.setItem("orderUserInfo", JSON.stringify(defaultUser));
-      router.push("/orders/create");
-    },
-  },
-  {
     name: "客服中心",
     icon: "service",
     onClick: () => router.push("/support"),
@@ -277,37 +203,7 @@ const hotGames = ref([
   },
 ]);
 
-// 推荐服务
-const recommendServices = ref([
-  {
-    id: 1,
-    title: "王者荣耀段位提升",
-    description: "专业代练团队，快速安全上分，支持所有段位",
-    type: "段位代练",
-    price: 15,
-    completedCount: 2341,
-    responseTime: "5分钟",
-    provider: {
-      name: "王者代练工作室",
-      avatar: "https://picsum.photos/seed/provider1/40/40.jpg",
-      rating: 4.8,
-    },
-  },
-  {
-    id: 2,
-    title: "三角洲武器解锁",
-    description: "全武器解锁服务，支持各种模式，安全可靠",
-    type: "武器解锁",
-    price: 30,
-    completedCount: 1823,
-    responseTime: "10分钟",
-    provider: {
-      name: "三角洲专家",
-      avatar: "https://picsum.photos/seed/provider2/40/40.jpg",
-      rating: 4.9,
-    },
-  },
-]);
+
 
 // 安全保障特性
 const securityFeatures = ref([
@@ -343,9 +239,7 @@ const goToAuth = () => {
   }
 };
 
-const viewService = (id) => {
-  router.push(`/services/${id}`);
-};
+
 </script>
 
 <style lang="scss" scoped>
@@ -618,112 +512,7 @@ const viewService = (id) => {
   }
 }
 
-// 服务列表
-.service-list {
-  padding: 0 16px;
 
-  .service-item {
-    margin-bottom: 12px;
-    padding: 16px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-    &:active {
-      transform: scale(0.98);
-      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
-    }
-
-    .service-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 12px;
-
-      .provider-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        margin-right: 12px;
-      }
-
-      .provider-info {
-        flex: 1;
-
-        .provider-name {
-          font-size: 14px;
-          font-weight: 600;
-          margin-bottom: 2px;
-        }
-
-        .provider-rating {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-
-          .rating-text {
-            font-size: 12px;
-            color: #969799;
-          }
-        }
-      }
-    }
-
-    .service-content {
-      margin-bottom: 12px;
-
-      h4 {
-        margin: 0 0 4px;
-        font-size: 15px;
-        font-weight: 600;
-        color: #323233;
-      }
-
-      p {
-        margin: 0;
-        font-size: 13px;
-        color: #646566;
-        line-height: 1.5;
-      }
-    }
-
-    .service-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-top: 12px;
-      border-top: 1px solid #ebedf0;
-
-      .service-price {
-        display: flex;
-        align-items: baseline;
-        gap: 4px;
-
-        .price-label {
-          font-size: 12px;
-          color: #969799;
-        }
-
-        .price-value {
-          font-size: 16px;
-          font-weight: 600;
-          color: #ee0a24;
-        }
-      }
-
-      .service-stats {
-        display: flex;
-        gap: 12px;
-
-        .stat-item {
-          font-size: 11px;
-          color: #969799;
-        }
-      }
-    }
-  }
-}
 
 // 安全保障
 .security-section {

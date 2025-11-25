@@ -31,9 +31,6 @@
       <van-tab title="系统消息" name="system">
         <MessageList :messages="systemMessages" @click="goToChat" />
       </van-tab>
-      <van-tab title="订单消息" name="order">
-        <MessageList :messages="orderMessages" @click="goToChat" />
-      </van-tab>
     </van-tabs>
 
     <!-- 系统消息详情弹窗 -->
@@ -72,9 +69,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { showToast } from 'vant'
 import MessageList from '@/components/MessageList.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const searchValue = ref('')
 const activeTab = ref('all')
 const showSystemDetail = ref(false)
@@ -85,19 +85,10 @@ const messages = ref([
     id: 1,
     type: 'system',
     title: '系统通知',
-    content: '您的订单已确认，请及时处理',
+    content: '欢迎使用游戏担保交易平台',
     time: '10:30',
-    unread: 2,
-    avatar: 'https://picsum.photos/seed/system/40/40.jpg'
-  },
-  {
-    id: 2,
-    type: 'order',
-    title: '订单提醒',
-    content: '代练服务已完成，请确认验收',
-    time: '09:15',
     unread: 1,
-    avatar: 'https://picsum.photos/seed/order/40/40.jpg'
+    avatar: 'https://picsum.photos/seed/system/40/40.jpg'
   },
   {
     id: 8,
@@ -177,11 +168,73 @@ const messages = ref([
 ])
 
 onMounted(() => {
+  console.log('Messages页面加载')
+  console.log('当前用户:', authStore.user)
   loadMessages()
+  // 创建测试担保群
+  createTestGuaranteeGroups()
+  // 重新加载消息以确保担保群显示
+  setTimeout(() => {
+    loadMessages()
+  }, 1000)
 })
 
 const loadMessages = () => {
   console.log('加载消息列表')
+  console.log('当前用户权限:', authStore.user?.isAdmin ? '管理员' : '普通用户')
+  
+  // 先清空消息列表，重新加载
+  const originalMessages = [...messages.value]
+  
+  // 管理员可以看到所有群聊（包括担保群）
+  if (authStore.user?.isAdmin) {
+    console.log('管理员权限，加载所有担保交易群聊')
+    // 加载所有担保交易群聊
+    const chatList = JSON.parse(localStorage.getItem('chatList') || '[]')
+    console.log('chatList中的群聊:', chatList)
+    
+    chatList.forEach(chat => {
+      if (chat.isGuarantee && !messages.value.find(msg => msg.id === chat.id)) {
+        console.log('添加担保群到消息列表:', chat.name)
+        messages.value.push({
+          id: chat.id,
+          type: 'group',
+          title: chat.name,
+          content: chat.lastMessage || '担保交易群聊',
+          time: chat.lastTime,
+          unread: chat.unreadCount || 0,
+          avatar: chat.avatar,
+          memberCount: chat.members?.length || 2,
+          isGuarantee: true,
+          groupId: chat.id
+        })
+      }
+    })
+    
+    // 从localStorage加载担保交易群
+    const guaranteeGroups = JSON.parse(localStorage.getItem('orders') || '[]')
+    console.log('orders中的担保群:', guaranteeGroups)
+    
+    guaranteeGroups.forEach(order => {
+      if (!messages.value.find(msg => msg.id === order.id)) {
+        console.log('添加担保订单到消息列表:', order.title)
+        messages.value.push({
+          id: order.id,
+          type: 'group',
+          title: order.title,
+          content: `担保交易进行中 - ${order.status}`,
+          time: new Date(order.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+          unread: 0,
+          avatar: 'https://picsum.photos/seed/guarantee/40/40.jpg',
+          isGuarantee: true,
+          memberCount: 3,
+          groupId: order.id
+        })
+      }
+    })
+  }
+  
+  console.log('最终消息列表:', messages.value)
 }
 
 const onSearch = (value) => {
@@ -192,64 +245,91 @@ const goToChat = (message) => {
   console.log('=== 点击消息 ===')
   console.log('消息:', message)
   console.log('消息类型:', message.type)
+  console.log('是否是担保群:', message.isGuarantee)
   
-  switch (message.type) {
-    case 'group':
-      // 群聊消息跳转到群聊页面
-      const groupChatId = `group_${message.id}`
-      console.log('🟢 点击群聊，message:', message)
-      console.log('🟢 生成的群聊ID:', groupChatId)
-      
-      // 在页面上显示提示
-      alert(`正在进入群聊: ${message.title}\n群聊ID: ${groupChatId}`)
-      
-      // 保存群聊信息到sessionStorage
-      const groupInfo = {
-        id: message.id,
-        name: message.title,
-        avatar: message.avatar,
-        memberCount: message.memberCount || 0
-      }
-      console.log('🟢 保存群聊信息:', groupInfo)
-      sessionStorage.setItem('groupChatInfo', JSON.stringify(groupInfo))
-      
-      // 验证保存是否成功
-      const saved = sessionStorage.getItem('groupChatInfo')
-      console.log('🟢 验证保存的群聊信息:', saved)
-      
-      // 强制跳转前暂停一下
-      setTimeout(() => {
-        console.log('🟢 开始跳转到群聊页面')
-        router.push(`/chat/${groupChatId}`)
-      }, 100)
-      break
-    case 'friend':
-      // 好友申请跳转到好友页面
-      router.push('/friends')
-      break
-    case 'private':
-      // 私聊消息跳转到私聊页面
-      const privateChatId = `private_${message.id}`
-      // 保存用户信息到sessionStorage
-      const userInfo = {
-        id: message.id,
-        name: message.title,
-        avatar: message.avatar
-      }
-      sessionStorage.setItem('privateChatUser', JSON.stringify(userInfo))
-      router.push(`/chat/${privateChatId}`)
-      break
-    case 'system':
-      // 系统消息显示详情弹窗
-      showSystemMessageDetail(message)
-      break
-    case 'order':
-      // 订单消息跳转到订单详情
-      router.push(`/orders`)
-      break
-    default:
-      // 其他消息跳转到聊天页面
-      router.push(`/chat/${message.id}`)
+  try {
+    switch (message.type) {
+      case 'group':
+        // 群聊消息跳转到群聊页面
+        let groupChatId
+        if (message.isGuarantee && message.groupId) {
+          // 担保交易群使用特殊ID
+          groupChatId = message.groupId
+        } else {
+          // 普通群聊
+          groupChatId = `group_${message.id}`
+        }
+        
+        console.log('🟢 点击群聊，message:', message)
+        console.log('🟢 生成的群聊ID:', groupChatId)
+        
+        // 保存群聊信息到sessionStorage
+        const groupInfo = {
+          id: message.id,
+          name: message.title,
+          avatar: message.avatar,
+          memberCount: message.memberCount || 0,
+          isGuarantee: message.isGuarantee || false
+        }
+        console.log('🟢 保存群聊信息:', groupInfo)
+        sessionStorage.setItem('groupChatInfo', JSON.stringify(groupInfo))
+        
+        // 验证保存是否成功
+        const saved = sessionStorage.getItem('groupChatInfo')
+        console.log('🟢 验证保存的群聊信息:', saved)
+        
+        // 担保群跳转到专门的担保聊天页面
+        if (message.isGuarantee) {
+          console.log('🟢 担保群，跳转到担保聊天页面')
+          showToast(`正在进入担保交易群 ${message.title}`)
+          setTimeout(() => {
+            window.location.href = `/guarantee-chat/${groupChatId}`
+          }, 500)
+        } else {
+          // 普通群聊跳转到普通聊天页面
+          console.log('🟢 普通群聊，跳转到聊天页面')
+          showToast(`正在进入 ${message.title}`)
+          setTimeout(() => {
+            window.location.href = `/chat/${groupChatId}`
+          }, 500)
+        }
+        break
+        
+      case 'friend':
+        // 好友申请跳转到好友页面
+        router.push('/friends')
+        break
+        
+      case 'private':
+        // 私聊消息跳转到私聊页面
+        const privateChatId = `private_${message.id}`
+        // 保存用户信息到sessionStorage
+        const userInfo = {
+          id: message.id,
+          name: message.title,
+          avatar: message.avatar
+        }
+        sessionStorage.setItem('privateChatUser', JSON.stringify(userInfo))
+        console.log('🟢 跳转到私聊:', privateChatId)
+        showToast(`正在与 ${message.title} 私聊`)
+        setTimeout(() => {
+          router.push(`/chat/${privateChatId}`)
+        }, 500)
+        break
+        
+      case 'system':
+        // 系统消息显示详情弹窗
+        showSystemMessageDetail(message)
+        break
+
+      default:
+        // 其他消息跳转到聊天页面
+        console.log('🟢 默认跳转到聊天页面:', message.id)
+        router.push(`/chat/${message.id}`)
+    }
+  } catch (error) {
+    console.error('🔴 跳转出错:', error)
+    showToast('跳转失败，请重试')
   }
 }
 
@@ -266,9 +346,7 @@ const systemMessages = computed(() =>
   filteredMessages.value.filter(msg => msg.type === 'system')
 )
 
-const orderMessages = computed(() => 
-  filteredMessages.value.filter(msg => msg.type === 'order')
-)
+
 
 const privateMessages = computed(() => 
   filteredMessages.value.filter(msg => msg.type === 'private')
@@ -283,6 +361,247 @@ const groupMessages = computed(() => {
   console.log('群聊消息数据:', groups)
   return groups
 })
+
+// 创建测试担保群
+const createTestGuaranteeGroups = () => {
+  console.log('创建测试担保群')
+  
+  // 检查是否已存在测试群
+  const existingGroups = JSON.parse(localStorage.getItem('chatList') || '[]')
+  const testGroupIds = ['test_guarantee_1', 'test_guarantee_2', 'test_guarantee_3', 'test_guarantee_4', 'test_guarantee_5']
+  
+  if (existingGroups.some(chat => testGroupIds.includes(chat.id))) {
+    console.log('测试群已存在，跳过创建')
+    return
+  }
+  
+  // 创建5个测试担保群，防止混淆
+  const testGroups = [
+    {
+      id: 'test_guarantee_1',
+      name: '🎮 王者荣耀段位担保群',
+      avatar: 'https://picsum.photos/seed/wangzhe/40/40.jpg',
+      lastMessage: '管理员已确认收款，开始代练服务',
+      lastTime: '10:30',
+      unreadCount: 0,
+      isGroup: true,
+      isGuarantee: true,
+      members: [
+        { name: '玩家小李', phone: '18800000001', avatar: 'https://picsum.photos/seed/player1/40/40.jpg', role: 'buyer' },
+        { name: '代练师小王', phone: '18800000002', avatar: 'https://picsum.photos/seed/seller1/40/40.jpg', role: 'seller' },
+        { name: '管理员', phone: '18800000000', avatar: 'https://picsum.photos/seed/admin/40/40.jpg', role: 'admin' }
+      ]
+    },
+    {
+      id: 'test_guarantee_2', 
+      name: '🎯 和平精英装备担保群',
+      avatar: 'https://picsum.photos/seed/peace/40/40.jpg',
+      lastMessage: '等待买家确认收货',
+      lastTime: '09:15',
+      unreadCount: 2,
+      isGroup: true,
+      isGuarantee: true,
+      members: [
+        { name: '买家小张', phone: '18800000003', avatar: 'https://picsum.photos/seed/player2/40/40.jpg', role: 'buyer' },
+        { name: '卖家小陈', phone: '18800000004', avatar: 'https://picsum.photos/seed/seller2/40/40.jpg', role: 'seller' },
+        { name: '管理员', phone: '18800000000', avatar: 'https://picsum.photos/seed/admin/40/40.jpg', role: 'admin' }
+      ]
+    },
+    {
+      id: 'test_guarantee_3',
+      name: '⚔️ 原神账号担保群', 
+      avatar: 'https://picsum.photos/seed/genshin/40/40.jpg',
+      lastMessage: '账号交易已完成，资金已释放',
+      lastTime: '昨天',
+      unreadCount: 0,
+      isGroup: true,
+      isGuarantee: true,
+      members: [
+        { name: '买家小刘', phone: '18800000005', avatar: 'https://picsum.photos/seed/player3/40/40.jpg', role: 'buyer' },
+        { name: '卖家小赵', phone: '18800000006', avatar: 'https://picsum.photos/seed/seller3/40/40.jpg', role: 'seller' },
+        { name: '管理员', phone: '18800000000', avatar: 'https://picsum.photos/seed/admin/40/40.jpg', role: 'admin' }
+      ]
+    },
+    {
+      id: 'test_guarantee_4',
+      name: '🏅 英雄联盟皮肤担保群',
+      avatar: 'https://picsum.photos/seed/lol/40/40.jpg',
+      lastMessage: '皮肤交易已成功完成',
+      lastTime: '前天',
+      unreadCount: 0,
+      isGroup: true,
+      isGuarantee: true,
+      members: [
+        { name: '皮肤收藏家', phone: '18800000007', avatar: 'https://picsum.photos/seed/collector/40/40.jpg', role: 'buyer' },
+        { name: '皮肤交易商', phone: '18800000008', avatar: 'https://picsum.photos/seed/trader/40/40.jpg', role: 'seller' },
+        { name: '管理员', phone: '18800000000', avatar: 'https://picsum.photos/seed/admin/40/40.jpg', role: 'admin' }
+      ]
+    },
+    {
+      id: 'test_guarantee_5',
+      name: '🎲 绝地求生道具担保群',
+      avatar: 'https://picsum.photos/seed/pubg/40/40.jpg',
+      lastMessage: '道具已交付，请确认收货',
+      lastTime: '3天前',
+      unreadCount: 1,
+      isGroup: true,
+      isGuarantee: true,
+      members: [
+        { name: '道具买家', phone: '18800000009', avatar: 'https://picsum.photos/seed/itembuyer/40/40.jpg', role: 'buyer' },
+        { name: '道具卖家', phone: '18800000010', avatar: 'https://picsum.photos/seed/itemseller/40/40.jpg', role: 'seller' },
+        { name: '管理员', phone: '18800000000', avatar: 'https://picsum.photos/seed/admin/40/40.jpg', role: 'admin' }
+      ]
+    }
+  ]
+  
+  // 保存到聊天列表
+  const chatList = JSON.parse(localStorage.getItem('chatList') || '[]')
+  testGroups.forEach(group => {
+    chatList.push(group)
+    
+    // 为每个群创建聊天消息
+    const messages = createGroupMessages(group)
+    localStorage.setItem(`chat_messages_${group.id}`, JSON.stringify(messages))
+  })
+  
+  localStorage.setItem('chatList', JSON.stringify(chatList))
+  
+  // 保存到订单列表
+  const orders = JSON.parse(localStorage.getItem('orders') || '[]')
+  testGroups.forEach(group => {
+    const statusMap = {
+      'test_guarantee_1': 'confirmed',
+      'test_guarantee_2': 'pending', 
+      'test_guarantee_3': 'completed',
+      'test_guarantee_4': 'completed',
+      'test_guarantee_5': 'pending'
+    }
+    
+    const amountMap = {
+      'test_guarantee_1': '200',
+      'test_guarantee_2': '150',
+      'test_guarantee_3': '300',
+      'test_guarantee_4': '180',
+      'test_guarantee_5': '120'
+    }
+    
+    orders.push({
+      id: group.id,
+      title: group.name,
+      status: statusMap[group.id],
+      amount: amountMap[group.id],
+      guaranteeFee: Math.floor(parseFloat(amountMap[group.id]) * 0.05).toString(),
+      createdAt: new Date().toISOString(),
+      participants: group.members.map(m => m.name).join(', '),
+      description: `${group.name} - 担保交易`,
+      initiator: group.members[0],
+      receiver: group.members[1],
+      initiatorConfirmed: statusMap[group.id] !== 'pending',
+      receiverConfirmed: statusMap[group.id] === 'completed'
+    })
+  })
+  localStorage.setItem('orders', JSON.stringify(orders))
+  
+  console.log('测试担保群创建完成')
+}
+
+// 创建群聊消息
+const createGroupMessages = (group) => {
+  const baseMessages = [
+    {
+      id: 1,
+      sender: '系统消息',
+      content: `${group.name} 已创建`,
+      time: '09:00',
+      isSelf: false,
+      avatar: 'https://picsum.photos/seed/system/40/40.jpg',
+      showTime: true,
+      isSystem: true
+    },
+    {
+      id: 2,
+      sender: '系统消息',
+      content: '管理员已自动加入群聊',
+      time: '09:01',
+      isSelf: false,
+      avatar: 'https://picsum.photos/seed/system/40/40.jpg',
+      isSystem: true
+    },
+    {
+      id: 3,
+      sender: '管理员',
+      content: '大家好，我是管理员。担保交易已创建，请按照流程操作。',
+      time: '09:02',
+      isSelf: false,
+      avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+      isAdmin: true
+    }
+  ]
+  
+  // 根据群状态添加不同的消息
+  if (group.id === 'test_guarantee_1') {
+    baseMessages.push(
+      {
+        id: 4,
+        sender: '玩家小李',
+        content: '已支付，请确认',
+        time: '10:00',
+        isSelf: false,
+        avatar: 'https://picsum.photos/seed/player1/40/40.jpg'
+      },
+      {
+        id: 5,
+        sender: '管理员',
+        content: '✅ 收款确认成功！\n\n📋 资金到账信息：\n• 支付状态：已到账 ✓\n• 资金金额：已核实 ✓\n• 担保状态：生效中 ✓\n\n🎯 资金已安全到账，现在可以开始交易。',
+        time: '10:30',
+        isSelf: false,
+        avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+        isAdmin: true
+      }
+    )
+  } else if (group.id === 'test_guarantee_2') {
+    baseMessages.push(
+      {
+        id: 4,
+        sender: '代练师小陈',
+        content: '装备已准备好，等待买家付款',
+        time: '09:10',
+        isSelf: false,
+        avatar: 'https://picsum.photos/seed/seller2/40/40.jpg'
+      },
+      {
+        id: 5,
+        sender: '买家小张',
+        content: '我准备付款了',
+        time: '09:15',
+        isSelf: false,
+        avatar: 'https://picsum.photos/seed/player2/40/40.jpg'
+      }
+    )
+  } else if (group.id === 'test_guarantee_3') {
+    baseMessages.push(
+      {
+        id: 4,
+        sender: '买家小刘',
+        content: '账号已收到，确认收货',
+        time: '昨天 15:00',
+        isSelf: false,
+        avatar: 'https://picsum.photos/seed/player3/40/40.jpg'
+      },
+      {
+        id: 5,
+        sender: '管理员',
+        content: '✅ 交易已完成，资金已释放给卖家',
+        time: '昨天',
+        isSelf: false,
+        avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+        isAdmin: true
+      }
+    )
+  }
+  
+  return baseMessages
+}
 
 // 显示系统消息详情
 const showSystemMessageDetail = (message) => {

@@ -61,8 +61,74 @@
       </div>
     </div>
 
-    <!-- 私聊担保按钮 -->
-    <div v-if="!chatInfo.isGroup" class="guarantee-section">
+    <!-- 担保交易确认界面 -->
+    <div v-if="chatInfo.isGuaranteeGroup" class="guarantee-confirm-section">
+      <div class="guarantee-card">
+        <div class="guarantee-header">
+          <van-icon name="shield-o" class="guarantee-icon" />
+          <span class="guarantee-title">担保交易确认</span>
+        </div>
+        
+        <div class="guarantee-content">
+          <div class="party-info">
+            <div class="party-item">
+              <div class="party-label">甲方（发起方）</div>
+              <div class="party-user">
+                <img :src="guaranteeData.initiator?.avatar || 'https://picsum.photos/seed/user1/40/40.jpg'" class="party-avatar" />
+                <span class="party-name">{{ guaranteeData.initiator?.name || '用户' }}</span>
+                <van-tag v-if="guaranteeData.initiatorConfirmed" type="success" size="small">已确认</van-tag>
+                <van-tag v-else type="warning" size="small">待确认</van-tag>
+              </div>
+            </div>
+            
+            <div class="party-item">
+              <div class="party-label">乙方（接收方）</div>
+              <div class="party-user">
+                <img :src="guaranteeData.receiver?.avatar || 'https://picsum.photos/seed/user2/40/40.jpg'" class="party-avatar" />
+                <span class="party-name">{{ guaranteeData.receiver?.name || '待确认' }}</span>
+                <van-tag v-if="guaranteeData.receiverConfirmed" type="success" size="small">已确认</van-tag>
+                <van-tag v-else type="warning" size="small">待确认</van-tag>
+              </div>
+            </div>
+          </div>
+          
+          <div class="guarantee-details">
+            <van-cell title="交易金额" :value="`¥${guaranteeData.amount || '0'}`" />
+            <van-cell title="担保费用" :value="`¥${guaranteeData.guaranteeFee || '0'}`" />
+            <van-cell title="交易描述" :value="guaranteeData.description || '无'" />
+          </div>
+        </div>
+        
+        <div class="guarantee-actions">
+          <template v-if="!isBothConfirmed">
+            <van-button 
+              v-if="canCurrentUserConfirm" 
+              type="primary" 
+              size="small"
+              @click="confirmGuarantee"
+              :loading="confirming"
+            >
+              确认交易
+            </van-button>
+            <van-button 
+              v-if="authStore.user?.isAdmin" 
+              type="success" 
+              size="small"
+              @click="adminConfirm"
+              :loading="confirming"
+            >
+              管理员确认
+            </van-button>
+          </template>
+          <van-tag v-else type="success" size="large">
+            <van-icon name="success" /> 双方已确认，交易生效
+          </van-tag>
+        </div>
+      </div>
+    </div>
+
+    <!-- 私聊担保按钮 - 只有非管理员才能看到 -->
+    <div v-if="!chatInfo.isGroup && !authStore.user?.isAdmin" class="guarantee-section">
       <van-button 
         type="warning" 
         size="small" 
@@ -125,6 +191,28 @@
       @select="onAvatarActionSelect"
       cancel-text="取消"
     />
+
+    <!-- 修改群名对话框 -->
+    <van-dialog
+      v-model:show="showRenameDialog"
+      title="修改群名"
+      :show-confirm-button="false"
+      :show-cancel-button="false"
+    >
+      <div class="rename-dialog">
+        <van-field
+          v-model="newGroupName"
+          label="新群名"
+          placeholder="请输入新的群名称"
+          maxlength="20"
+          show-word-limit
+        />
+        <div class="dialog-actions">
+          <van-button size="small" @click="showRenameDialog = false">取消</van-button>
+          <van-button size="small" type="primary" @click="confirmRename">确定</van-button>
+        </div>
+      </div>
+    </van-dialog>
   </div>
 </template>
 
@@ -132,9 +220,11 @@
 import { ref, onMounted, nextTick, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const chatId = route.params.id
 const inputMessage = ref('')
@@ -142,6 +232,12 @@ const showActions = ref(false)
 const showAvatarActions = ref(false)
 const selectedUser = ref(null)
 const chatContent = ref(null)
+const showRenameDialog = ref(false)
+const newGroupName = ref('')
+
+// 担保交易相关变量
+const guaranteeData = ref({})
+const confirming = ref(false)
 
 const chatInfo = ref({
   id: 1,
@@ -368,22 +464,41 @@ const privateMessages = {
 
 // 根据聊天类型动态生成操作选项
 const actions = computed(() => {
+  const isAdmin = authStore.user?.isAdmin
+  const isGuaranteeGroup = chatInfo.value.isGuaranteeGroup || chatId.startsWith('guarantee_')
+  
   if (chatInfo.value.isGroup) {
     // 群聊操作
-    return [
+    let groupActions = [
       { name: '查看群成员', value: 'members' },
       { name: '群聊设置', value: 'settings' },
-      { name: '清空聊天记录', value: 'clear' },
-      { name: '举报群聊', value: 'report' }
+      { name: '清空聊天记录', value: 'clear' }
     ]
+    
+    // 管理员在担保交易群中有额外权限
+    if (isAdmin && isGuaranteeGroup) {
+      groupActions.unshift(
+        { name: '修改群名', value: 'rename_group' },
+        { name: '订单管理', value: 'order_manage' }
+      )
+    }
+    
+    // 非管理员不能举报担保交易群
+    if (!isAdmin || !isGuaranteeGroup) {
+      groupActions.push({ name: '举报群聊', value: 'report' })
+    }
+    
+    return groupActions
   } else {
     // 私聊操作
-    return [
+    let privateActions = [
       { name: '发起担保', value: 'create_order' },
       { name: '清空聊天记录', value: 'clear' },
       { name: '举报用户', value: 'report' },
       { name: '拉黑用户', value: 'block' }
     ]
+    
+    return privateActions
   }
 })
 
@@ -402,6 +517,28 @@ const dateGroups = computed(() => {
     }
   })
   return Array.from(dates)
+})
+
+// 担保交易相关计算属性
+const isBothConfirmed = computed(() => {
+  return guaranteeData.value.initiatorConfirmed && guaranteeData.value.receiverConfirmed
+})
+
+const canCurrentUserConfirm = computed(() => {
+  const currentUser = authStore.user
+  if (!currentUser || !guaranteeData.value) return false
+  
+  // 如果是发起方且未确认
+  if (guaranteeData.value.initiator?.phone === currentUser.phone && !guaranteeData.value.initiatorConfirmed) {
+    return true
+  }
+  
+  // 如果是接收方且未确认
+  if (guaranteeData.value.receiver?.phone === currentUser.phone && !guaranteeData.value.receiverConfirmed) {
+    return true
+  }
+  
+  return false
 })
 
 onMounted(() => {
@@ -581,15 +718,24 @@ const loadChatInfo = () => {
     console.log('🔵 使用默认用户信息')
   }
   
+  // 加载担保交易数据
+  loadGuaranteeData()
+  
   console.log('最终聊天信息:', chatInfo.value)
 }
 
 const loadMessages = () => {
   // 根据聊天ID和类型加载消息
-  if (chatInfo.value.isGuaranteeGroup) {
-    // 担保交易群消息
-    const guaranteeData = sessionStorage.getItem('guaranteeGroup')
-    if (guaranteeData) {
+  if (chatInfo.value.isGuaranteeGroup || chatId.startsWith('guarantee_')) {
+    // 担保交易群消息 - 从localStorage读取
+    const savedMessages = localStorage.getItem(`chat_messages_${chatId}`)
+    if (savedMessages) {
+      messages.value = JSON.parse(savedMessages)
+      console.log('加载担保交易群消息:', messages.value.length, '条')
+    } else {
+      // 如果没有保存的消息，创建默认消息
+      const guaranteeData = sessionStorage.getItem('guaranteeGroup')
+      if (guaranteeData) {
       const group = JSON.parse(guaranteeData)
       messages.value = [
         {
@@ -623,14 +769,18 @@ const loadMessages = () => {
           isSelf: false,
           avatar: 'https://picsum.photos/seed/admin/40/40.jpg'
         }
-        messages.value.push(adminMessage)
-        
-        nextTick(() => {
-          scrollToBottom()
-        })
-      }, 1000)
-    } else {
-      messages.value = []
+          messages.value.push(adminMessage)
+          
+          // 保存消息
+          localStorage.setItem(`chat_messages_${chatId}`, JSON.stringify(messages.value))
+          
+          nextTick(() => {
+            scrollToBottom()
+          })
+        }, 1000)
+      } else {
+        messages.value = []
+      }
     }
   } else if (chatInfo.value.isGroup) {
     // 普通群聊消息
@@ -684,10 +834,11 @@ const loadMessages = () => {
 const sendMessage = () => {
   if (!inputMessage.value.trim()) return
   
+  const messageContent = inputMessage.value.trim()
   const newMessage = {
     id: messages.value.length + 1,
     sender: '我',
-    content: inputMessage.value.trim(),
+    content: messageContent,
     time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
     isSelf: true,
     avatar: 'https://picsum.photos/seed/me/40/40.jpg'
@@ -696,26 +847,82 @@ const sendMessage = () => {
   messages.value.push(newMessage)
   inputMessage.value = ''
   
+  // 保存消息到localStorage
+  if (chatId.startsWith('guarantee_')) {
+    localStorage.setItem(`chat_messages_${chatId}`, JSON.stringify(messages.value))
+  }
+  
   nextTick(() => {
     scrollToBottom()
   })
   
-  // 模拟对方回复
-  setTimeout(() => {
-    const replyMessage = {
-      id: messages.value.length + 1,
-      sender: chatInfo.value.isGroup ? '代练达人-小明' : chatInfo.value.title,
-      content: getRandomReply(),
-      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-      isSelf: false,
-      avatar: chatInfo.value.isGroup ? 'https://picsum.photos/seed/user1/40/40.jpg' : chatInfo.value.avatar
-    }
-    messages.value.push(replyMessage)
-    
-    nextTick(() => {
-      scrollToBottom()
-    })
-  }, 1000 + Math.random() * 2000)
+  // 检测"已支付"消息，管理员确认钱是否到账
+  if ((chatInfo.value.isGuaranteeGroup || chatId.startsWith('guarantee_')) && 
+      (messageContent.includes('已支付') || messageContent.includes('支付完成'))) {
+    setTimeout(() => {
+      const adminConfirmMessage = {
+        id: messages.value.length + 1,
+        sender: '管理员',
+        content: '✅ 正在确认收款...\n\n📋 验证步骤：\n• 检查支付金额是否正确\n• 确认资金是否到账\n• 验证交易安全性\n\n⏳ 请稍等，我正在核实收款情况...',
+        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        isSelf: false,
+        avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+        isAdmin: true
+      }
+      messages.value.push(adminConfirmMessage)
+      
+      // 保存消息
+      if (chatId.startsWith('guarantee_')) {
+        localStorage.setItem(`chat_messages_${chatId}`, JSON.stringify(messages.value))
+      }
+      
+      nextTick(() => {
+        scrollToBottom()
+      })
+      
+      // 3秒后确认到账
+      setTimeout(() => {
+        const finalConfirmMessage = {
+          id: messages.value.length + 1,
+          sender: '管理员',
+          content: '✅ 收款确认成功！\n\n📋 资金到账信息：\n• 支付状态：已到账 ✓\n• 资金金额：已核实 ✓\n• 担保状态：生效中 ✓\n\n🎯 资金已安全到账，现在可以开始交易。请双方按照约定完成服务，我会全程监督并确保交易安全。',
+          time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+          isSelf: false,
+          avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+          isAdmin: true
+        }
+        messages.value.push(finalConfirmMessage)
+        
+        // 保存消息
+        if (chatId.startsWith('guarantee_')) {
+          localStorage.setItem(`chat_messages_${chatId}`, JSON.stringify(messages.value))
+        }
+        
+        nextTick(() => {
+          scrollToBottom()
+        })
+      }, 3000)
+    }, 2000)
+  }
+  
+  // 普通回复（非担保交易群）
+  else if (!chatId.startsWith('guarantee_')) {
+    setTimeout(() => {
+      const replyMessage = {
+        id: messages.value.length + 1,
+        sender: chatInfo.value.isGroup ? '代练达人-小明' : chatInfo.value.title,
+        content: getRandomReply(),
+        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        isSelf: false,
+        avatar: chatInfo.value.isGroup ? 'https://picsum.photos/seed/user1/40/40.jpg' : chatInfo.value.avatar
+      }
+      messages.value.push(replyMessage)
+      
+      nextTick(() => {
+        scrollToBottom()
+      })
+    }, 1000 + Math.random() * 2000)
+  }
 }
 
 const getRandomReply = () => {
@@ -738,13 +945,26 @@ const scrollToBottom = () => {
 }
 
 const showMoreActions = () => {
-  showActions.value = true
+  // 管理员在担保交易群中有额外操作
+  if (authStore.user?.isAdmin && (chatInfo.value.isGuaranteeGroup || chatId.startsWith('guarantee_'))) {
+    // 管理员操作选项
+    showActions.value = true
+  } else {
+    // 普通用户操作选项
+    showActions.value = true
+  }
 }
 
 const onActionSelect = (action) => {
   showActions.value = false
   
   switch (action.value) {
+    case 'rename_group':
+      openRenameDialog()
+      break
+    case 'order_manage':
+      showToast('订单管理功能开发中...')
+      break
     case 'members':
       showToast(`群成员: ${chatInfo.value.memberCount}人`)
       break
@@ -780,7 +1000,7 @@ const onActionSelect = (action) => {
       sessionStorage.setItem('guaranteeGroup', JSON.stringify(guaranteeGroup))
       
       // 直接跳转到担保交易群聊
-      window.location.href = `/chat/${guaranteeGroup.id}`
+      window.location.href = `/guarantee-chat/${guaranteeGroup.id}`
       showToast('担保交易群聊已创建')
       break
     case 'block':
@@ -845,8 +1065,138 @@ const createGuaranteeOrder = () => {
   sessionStorage.setItem('guaranteeGroup', JSON.stringify(guaranteeGroup))
   
   // 直接跳转到担保交易群聊
-  window.location.href = `/chat/${guaranteeGroup.id}`
+  window.location.href = `/guarantee-chat/${guaranteeGroup.id}`
   showToast(`担保交易群聊已创建`)
+}
+
+// 确认担保交易
+const confirmGuarantee = async () => {
+  confirming.value = true
+  try {
+    const currentUser = authStore.user
+    
+    // 判断当前用户是发起方还是接收方
+    if (guaranteeData.value.initiator?.phone === currentUser.phone) {
+      guaranteeData.value.initiatorConfirmed = true
+    } else if (guaranteeData.value.receiver?.phone === currentUser.phone) {
+      guaranteeData.value.receiverConfirmed = true
+    }
+    
+    // 更新sessionStorage中的数据
+    sessionStorage.setItem('guaranteeGroup', JSON.stringify(guaranteeData.value))
+    
+    // 添加确认消息到聊天
+    const confirmMessage = {
+      id: Date.now(),
+      sender: currentUser.nickname || '用户',
+      senderId: currentUser.phone,
+      content: `我已确认担保交易`,
+      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      isSelf: true,
+      avatar: currentUser.avatar || 'https://picsum.photos/seed/currentuser/40/40.jpg',
+      showTime: true,
+      isSystem: false
+    }
+    
+    messages.value.push(confirmMessage)
+    saveMessages()
+    
+    showToast('确认成功')
+    
+    // 如果双方都已确认，添加系统消息
+    if (isBothConfirmed.value) {
+      setTimeout(() => {
+        const systemMessage = {
+          id: Date.now() + 1,
+          content: '🎉 双方已确认，担保交易正式生效！平台将保障交易安全进行。',
+          time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+          isSelf: false,
+          isSystem: true,
+          showTime: true
+        }
+        messages.value.push(systemMessage)
+        saveMessages()
+      }, 1000)
+    }
+  } catch (error) {
+    console.error('确认失败:', error)
+    showToast('确认失败，请重试')
+  } finally {
+    confirming.value = false
+  }
+}
+
+// 管理员确认
+const adminConfirm = async () => {
+  confirming.value = true
+  try {
+    // 管理员可以强制确认双方
+    guaranteeData.value.initiatorConfirmed = true
+    guaranteeData.value.receiverConfirmed = true
+    
+    // 更新sessionStorage
+    sessionStorage.setItem('guaranteeGroup', JSON.stringify(guaranteeData.value))
+    
+    // 添加管理员确认消息
+    const adminMessage = {
+      id: Date.now(),
+      sender: '管理员',
+      senderId: 'admin',
+      content: `管理员已确认此担保交易，交易正式生效`,
+      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      isSelf: false,
+      avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+      showTime: true,
+      isSystem: false
+    }
+    
+    messages.value.push(adminMessage)
+    saveMessages()
+    
+    showToast('管理员确认成功')
+  } catch (error) {
+    console.error('管理员确认失败:', error)
+    showToast('确认失败，请重试')
+  } finally {
+    confirming.value = false
+  }
+}
+
+// 保存消息到localStorage
+const saveMessages = () => {
+  if (chatId.startsWith('guarantee_')) {
+    localStorage.setItem(`chat_messages_${chatId}`, JSON.stringify(messages.value))
+  }
+}
+
+// 加载担保交易数据
+const loadGuaranteeData = () => {
+  if (chatInfo.value.isGuaranteeGroup) {
+    const guaranteeGroupData = sessionStorage.getItem('guaranteeGroup')
+    if (guaranteeGroupData) {
+      guaranteeData.value = JSON.parse(guaranteeGroupData)
+      console.log('加载担保交易数据:', guaranteeData.value)
+    } else {
+      // 如果没有数据，创建默认数据
+      guaranteeData.value = {
+        initiator: {
+          name: '发起方',
+          phone: '18800000001',
+          avatar: 'https://picsum.photos/seed/initiator/40/40.jpg'
+        },
+        receiver: {
+          name: '接收方',
+          phone: '18800000002', 
+          avatar: 'https://picsum.photos/seed/receiver/40/40.jpg'
+        },
+        amount: '200',
+        guaranteeFee: '10',
+        description: '游戏代练服务',
+        initiatorConfirmed: false,
+        receiverConfirmed: false
+      }
+    }
+  }
 }
 
 // 头像点击事件
@@ -931,6 +1281,62 @@ const onAvatarActionSelect = (action) => {
   }
   
   selectedUser.value = null
+}
+
+// 修改群名相关函数
+const openRenameDialog = () => {
+  newGroupName.value = chatInfo.value.title
+  showRenameDialog.value = true
+}
+
+const confirmRename = () => {
+  if (!newGroupName.value.trim()) {
+    showToast('群名不能为空')
+    return
+  }
+  
+  const oldName = chatInfo.value.title
+  chatInfo.value.title = newGroupName.value.trim()
+  
+  // 更新localStorage中的群聊信息
+  const chatList = JSON.parse(localStorage.getItem('chatList') || '[]')
+  const chatIndex = chatList.findIndex(chat => chat.id === chatId)
+  if (chatIndex !== -1) {
+    chatList[chatIndex].name = chatInfo.value.title
+    localStorage.setItem('chatList', JSON.stringify(chatList))
+  }
+  
+  // 更新订单信息（如果是担保交易群）
+  const orders = JSON.parse(localStorage.getItem('orders') || '[]')
+  const orderIndex = orders.findIndex(order => order.id === chatId)
+  if (orderIndex !== -1) {
+    orders[orderIndex].title = chatInfo.value.title
+    localStorage.setItem('orders', JSON.stringify(orders))
+  }
+  
+  // 发送系统消息
+  const systemMessage = {
+    id: messages.value.length + 1,
+    sender: '系统消息',
+    content: `管理员将群名从"${oldName}"修改为"${chatInfo.value.title}"`,
+    time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+    isSelf: false,
+    avatar: 'https://picsum.photos/seed/system/40/40.jpg',
+    isSystem: true
+  }
+  messages.value.push(systemMessage)
+  
+  // 保存消息
+  if (chatId.startsWith('guarantee_')) {
+    localStorage.setItem(`chat_messages_${chatId}`, JSON.stringify(messages.value))
+  }
+  
+  showRenameDialog.value = false
+  showToast('群名修改成功')
+  
+  nextTick(() => {
+    scrollToBottom()
+  })
 }
 </script>
 
@@ -1247,5 +1653,145 @@ const onAvatarActionSelect = (action) => {
 
 .chat-content::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.3);
+}
+
+// 修改群名对话框样式
+.rename-dialog {
+  padding: 16px;
+
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+  }
+}
+
+// 担保交易确认界面样式
+.guarantee-confirm-section {
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+  padding: 16px;
+  
+  .guarantee-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 16px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    
+    .guarantee-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+      
+      .guarantee-icon {
+        font-size: 24px;
+        margin-right: 8px;
+      }
+      
+      .guarantee-title {
+        font-size: 18px;
+        font-weight: 600;
+      }
+    }
+    
+    .guarantee-content {
+      .party-info {
+        margin-bottom: 16px;
+        
+        .party-item {
+          margin-bottom: 12px;
+          
+          .party-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 6px;
+          }
+          
+          .party-user {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            
+            .party-avatar {
+              width: 32px;
+              height: 32px;
+              border-radius: 50%;
+              margin-right: 8px;
+            }
+            
+            .party-name {
+              flex: 1;
+              font-size: 16px;
+              font-weight: 500;
+            }
+          }
+        }
+      }
+      
+      .guarantee-details {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        backdrop-filter: blur(10px);
+        margin-bottom: 16px;
+        
+        :deep(.van-cell) {
+          background: transparent;
+          color: white;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          
+          &:last-child {
+            border-bottom: none;
+          }
+          
+          .van-cell__title {
+            color: rgba(255, 255, 255, 0.9);
+          }
+          
+          .van-cell__value {
+            color: white;
+            font-weight: 500;
+          }
+        }
+      }
+    }
+    
+    .guarantee-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      
+      .van-button {
+        border-radius: 20px;
+        font-weight: 500;
+        
+        &--primary {
+          background: #07c160;
+          border-color: #07c160;
+        }
+        
+        &--success {
+          background: #07c160;
+          border-color: #07c160;
+        }
+      }
+      
+      .van-tag {
+        border-radius: 20px;
+        padding: 8px 16px;
+        
+        &--success {
+          background: rgba(7, 193, 96, 0.2);
+          border-color: rgba(7, 193, 96, 0.3);
+          color: white;
+        }
+      }
+    }
+  }
 }
 </style>

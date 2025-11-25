@@ -671,7 +671,71 @@ const submitOrder = async () => {
     orders.push(guaranteeGroup)
     localStorage.setItem('orders', JSON.stringify(orders))
     
-    showToast('担保交易创建成功')
+    // 创建群聊消息（包含管理员自动加入）
+    const groupMessages = {
+      'guarantee': [
+        {
+          id: 1,
+          sender: '系统消息',
+          content: `担保交易群聊已创建`,
+          time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+          isSelf: false,
+          avatar: 'https://picsum.photos/seed/system/40/40.jpg',
+          showTime: true,
+          isSystem: true
+        },
+        {
+          id: 2,
+          sender: '系统消息',
+          content: `管理员已自动加入群聊`,
+          time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+          isSelf: false,
+          avatar: 'https://picsum.photos/seed/system/40/40.jpg',
+          isSystem: true
+        },
+        {
+          id: 3,
+          sender: '管理员',
+          content: `大家好，我是管理员。担保交易已创建，请按照以下流程操作：\n\n📋 订单信息：\n• 交易类型：${orderInfo.value.type === 'game' ? '游戏代练' : '其他服务'}\n• 游戏名称：${selectedGame.value.name}\n• 交易金额：¥${totalAmount}\n• 预计时长：${estimatedHours.value}小时\n• 截止时间：${orderInfo.value.deadline}\n\n💡 接下来请买方支付担保费用，支付完成后我会确认订单并开始监督交易过程。`,
+          time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+          isSelf: false,
+          avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+          isAdmin: true
+        },
+        {
+          id: 4,
+          sender: '管理员',
+          content: '【收款码】请扫描下方二维码完成担保费用支付\n[收款码图片]\n\n💡 支付完成后请在群内回复"已支付"，我会立即确认并协助完成后续流程。',
+          time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+          isSelf: false,
+          avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+          isAdmin: true
+        }
+      ]
+    }
+    
+    // 保存群聊消息
+    localStorage.setItem(`chat_messages_${guaranteeGroup.id}`, JSON.stringify(groupMessages['guarantee']))
+    
+    // 保存群聊信息到聊天列表
+    const chatList = JSON.parse(localStorage.getItem('chatList') || '[]')
+    chatList.push({
+      id: guaranteeGroup.id,
+      name: guaranteeGroup.title,
+      avatar: 'https://picsum.photos/seed/guarantee/40/40.jpg',
+      lastMessage: '管理员已加入群聊',
+      lastTime: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      unreadCount: 1,
+      isGroup: true,
+      isGuarantee: true,
+      members: [
+        { ...userInfo.value, role: 'buyer' },
+        { name: '管理员', avatar: 'https://picsum.photos/seed/admin/40/40.jpg', role: 'admin' }
+      ]
+    })
+    localStorage.setItem('chatList', JSON.stringify(chatList))
+    
+    showToast('担保交易创建成功，管理员已加入群聊')
     
     // 跳转到担保交易群聊
     router.push(`/chat/${guaranteeGroup.id}`)

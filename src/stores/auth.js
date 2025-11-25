@@ -33,6 +33,26 @@ export const useAuthStore = defineStore('auth', () => {
       // 模拟API调用
       const response = await mockRegisterApi(userData)
       
+      // 如果注册成功，自动登录
+      if (response.userId) {
+        const loginData = await mockLoginApi({
+          phone: userData.phone,
+          password: userData.password
+        })
+        
+        // 保存token和用户信息
+        token.value = loginData.token
+        user.value = {
+          ...loginData.user,
+          role: response.role,
+          isAdmin: response.isAdmin
+        }
+        
+        // 保存到本地存储
+        localStorage.setItem('token', token.value)
+        localStorage.setItem('user', JSON.stringify(user.value))
+      }
+      
       return { success: true, data: response }
     } catch (error) {
       return { success: false, error: error.message }
@@ -121,6 +141,8 @@ const mockLoginApi = async (credentials) => {
         avatar: 'https://picsum.photos/seed/user1/100/100.jpg',
         rating: 4.5,
         balance: 1000,
+        role: 'user',
+        isAdmin: false,
         createTime: new Date().toISOString()
       }
     }
@@ -128,15 +150,20 @@ const mockLoginApi = async (credentials) => {
   
   // 模拟其他用户登录
   if (credentials.phone && credentials.password.length >= 6) {
+    // 检查是否为管理员账号（手机号前缀为188）
+    const isAdmin = credentials.phone.startsWith('188')
+    
     return {
       token: 'mock_token_' + Date.now(),
       user: {
         id: Math.floor(Math.random() * 1000) + 1,
         phone: credentials.phone,
-        name: `用户${credentials.phone.slice(-4)}`,
-        avatar: `https://picsum.photos/seed/user${Date.now()}/100/100.jpg`,
-        rating: 4.0 + Math.random(),
-        balance: Math.floor(Math.random() * 2000),
+        name: isAdmin ? `管理员${credentials.phone.slice(-4)}` : `用户${credentials.phone.slice(-4)}`,
+        avatar: isAdmin ? 'https://picsum.photos/seed/admin/100/100.jpg' : `https://picsum.photos/seed/user${Date.now()}/100/100.jpg`,
+        rating: isAdmin ? 5.0 : (4.0 + Math.random()),
+        balance: isAdmin ? 999999 : Math.floor(Math.random() * 2000),
+        role: isAdmin ? 'admin' : 'user',
+        isAdmin: isAdmin,
         createTime: new Date().toISOString()
       }
     }
@@ -159,10 +186,16 @@ const mockRegisterApi = async (userData) => {
     throw new Error('密码长度为6-20位')
   }
   
-  // 模拟注册成功
+  // 检查是否为管理员账号（手机号前缀为188的自动设为管理员）
+  const isAdmin = userData.phone.startsWith('188')
+  const userId = Math.floor(Math.random() * 1000) + 1
+  
+  // 模拟注册成功，包含角色信息
   return {
-    message: '注册成功',
-    userId: Math.floor(Math.random() * 1000) + 1
+    message: isAdmin ? '管理员账号注册成功' : '注册成功',
+    userId: userId,
+    role: isAdmin ? 'admin' : 'user',
+    isAdmin: isAdmin
   }
 }
 

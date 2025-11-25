@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试管理员账号</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-info {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .admin-accounts {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .steps {
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>游戏担保交易平台 - 测试指南</h1>
+    
+    <div class="test-info">
+        <h2>🔧 测试说明</h2>
+        <p>为了测试担保交易群功能，您需要使用管理员账号登录。以下是测试步骤：</p>
+    </div>
+
+    <div class="admin-accounts">
+        <h2>👑 管理员测试账号</h2>
+        <p>您可以使用以下任意一个管理员账号进行登录：</p>
+        <ul>
+            <li><strong>手机号：</strong> <code>18800000001</code> | <strong>密码：</strong> <code>123456</code></li>
+            <li><strong>手机号：</strong> <code>18800000002</code> | <strong>密码：</strong> <code>123456</code></li>
+            <li><strong>手机号：</strong> <code>18800000003</code> | <strong>密码：</strong> <code>123456</code></li>
+        </ul>
+        <p><strong>注意：</strong>手机号以 <code>188</code> 开头的都会被自动识别为管理员账号</p>
+    </div>
+
+    <div class="steps">
+        <h2>📋 测试步骤</h2>
+        <ol>
+            <li><strong>登录管理员账号：</strong>使用上述任意一个管理员账号登录系统</li>
+            <li><strong>进入消息页面：</strong>点击底部导航栏的"消息"按钮</li>
+            <li><strong>查看担保交易群：</strong>在"群聊"标签页中，您应该能看到3个测试担保交易群：
+                <ul>
+                    <li>王者荣耀段位担保群</li>
+                    <li>和平精英装备担保群</li>
+                    <li>原神账号担保群</li>
+                </ul>
+            </li>
+            <li><strong>测试群聊功能：</strong>点击任意一个担保交易群，进入群聊界面</li>
+            <li><strong>测试管理员功能：</strong>在群聊中，您可以：
+                <ul>
+                    <li>查看群聊消息历史</li>
+                    <li>发送消息</li>
+                    <li>点击右上角"更多"按钮进行群管理</li>
+                    <li>修改群名</li>
+                    <li>确认收款（当用户发送"已支付"时）</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <div class="troubleshooting">
+        <h2>🔍 问题排查</h2>
+        <p>如果遇到问题，请检查：</p>
+        <ul>
+            <li>确保使用的是管理员账号（手机号188开头）</li>
+            <li>确保页面已完全加载（等待1-2秒）</li>
+            <li>检查浏览器控制台是否有错误信息</li>
+            <li>尝试刷新页面重新加载</li>
+        </ul>
+    </div>
+
+    <p><strong>测试地址：</strong> <a href="http://localhost:3007" target="_blank">http://localhost:3007</a></p>
+</body>
+</html>

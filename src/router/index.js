@@ -26,18 +26,7 @@ const routes = [
   //   component: () => import('@/views/Community.vue'),
   //   meta: { title: '社群' }
   // },
-  {
-    path: "/orders",
-    name: "Orders",
-    component: () => import("@/views/Orders.vue"),
-    meta: { title: "订单", requiresAuth: true },
-  },
-  {
-    path: "/orders/create",
-    name: "CreateOrder",
-    component: () => import("@/views/CreateOrder.vue"),
-    meta: { title: "创建订单", requiresAuth: true },
-  },
+
   // 需求相关功能暂时隐藏
   // {
   //   path: '/demand/create',
@@ -57,12 +46,7 @@ const routes = [
   //   component: () => import('@/views/DemandList.vue'),
   //   meta: { title: '需求大厅' }
   // },
-  {
-    path: "/order/:id",
-    name: "OrderDetail",
-    component: () => import("@/views/OrderDetail.vue"),
-    meta: { title: "订单详情" },
-  },
+
   {
     path: "/login",
     name: "Login",
@@ -92,6 +76,12 @@ const routes = [
     name: "Chat",
     component: () => import("@/views/Chat.vue"),
     meta: { title: "聊天", requiresAuth: true },
+  },
+  {
+    path: "/guarantee-chat/:id",
+    name: "GuaranteeChat",
+    component: () => import("@/views/GuaranteeChat.vue"),
+    meta: { title: "担保交易群聊", requiresAuth: true },
   },
   {
     path: "/friends",
@@ -171,6 +161,13 @@ const routes = [
     component: () => import("@/views/Services.vue"),
     meta: { title: "推荐服务" },
   },
+  // 管理员路由
+  {
+    path: "/admin/dashboard",
+    name: "AdminDashboard",
+    component: () => import("@/views/AdminDashboard.vue"),
+    meta: { title: "管理员控制台", requiresAuth: true, requiresAdmin: true },
+  },
 ];
 
 const router = createRouter({
@@ -187,6 +184,7 @@ router.beforeEach(async (to, from, next) => {
 
   // 检查是否需要登录
   const requiresAuth = to.meta.requiresAuth;
+  const requiresAdmin = to.meta.requiresAdmin;
 
   if (requiresAuth) {
     // 动态导入auth store避免循环依赖
@@ -203,6 +201,15 @@ router.beforeEach(async (to, from, next) => {
         query: { redirect: to.fullPath },
       });
       return;
+    }
+
+    // 检查是否需要管理员权限
+    if (requiresAdmin) {
+      if (!authStore.user?.isAdmin) {
+        // 非管理员访问管理员页面，重定向到首页
+        next("/");
+        return;
+      }
     }
   }
 

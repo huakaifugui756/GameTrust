@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>担保交易群功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 担保交易群功能测试</h1>
+    
+    <div class="test-section">
+        <h2>📊 测试结果</h2>
+        <div id="test-results"></div>
+        <button onclick="runTests()">🚀 运行测试</button>
+        <button onclick="clearData()">🗑️ 清除测试数据</button>
+        <button onclick="createTestData()">📝 创建测试数据</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 当前数据状态</h2>
+        <div id="data-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 快速访问</h2>
+        <p><a href="http://localhost:3007" target="_blank">🌐 打开应用</a></p>
+        <p><strong>管理员账号：</strong> 18800000001 / 123456</p>
+    </div>
+
+    <script>
+        function runTests() {
+            const results = document.getElementById('test-results');
+            results.innerHTML = '<h3>🔍 正在测试...</h3>';
+            
+            setTimeout(() => {
+                let html = '';
+                
+                // 测试1: 检查chatList
+                const chatList = JSON.parse(localStorage.getItem('chatList') || '[]');
+                const guaranteeGroups = chatList.filter(chat => chat.isGuarantee);
+                
+                if (guaranteeGroups.length > 0) {
+                    html += `<div class="test-section success">
+                        <h3>✅ 测试1: 担保交易群数据</h3>
+                        <p>找到 ${guaranteeGroups.length} 个担保交易群</p>
+                        <ul>
+                            ${guaranteeGroups.map(group => `<li>${group.name} (${group.id})</li>`).join('')}
+                        </ul>
+                    </div>`;
+                } else {
+                    html += `<div class="test-section error">
+                        <h3>❌ 测试1: 担保交易群数据</h3>
+                        <p>没有找到担保交易群数据</p>
+                    </div>`;
+                }
+                
+                // 测试2: 检查orders
+                const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+                const guaranteeOrders = orders.filter(order => 
+                    guaranteeGroups.some(group => group.id === order.id)
+                );
+                
+                if (guaranteeOrders.length > 0) {
+                    html += `<div class="test-section success">
+                        <h3>✅ 测试2: 担保订单数据</h3>
+                        <p>找到 ${guaranteeOrders.length} 个担保订单</p>
+                        <ul>
+                            ${guaranteeOrders.map(order => `<li>${order.title} - ${order.status}</li>`).join('')}
+                        </ul>
+                    </div>`;
+                } else {
+                    html += `<div class="test-section warning">
+                        <h3>⚠️ 测试2: 担保订单数据</h3>
+                        <p>没有找到对应的担保订单</p>
+                    </div>`;
+                }
+                
+                // 测试3: 检查聊天消息
+                let messageCount = 0;
+                guaranteeGroups.forEach(group => {
+                    const messages = JSON.parse(localStorage.getItem(`chat_messages_${group.id}`) || '[]');
+                    messageCount += messages.length;
+                });
+                
+                html += `<div class="test-section success">
+                    <h3>✅ 测试3: 聊天消息数据</h3>
+                    <p>总共 ${messageCount} 条聊天消息</p>
+                </div>`;
+                
+                results.innerHTML = html;
+                updateDataStatus();
+            }, 500);
+        }
+        
+        function clearData() {
+            if (confirm('确定要清除所有测试数据吗？')) {
+                localStorage.removeItem('chatList');
+                localStorage.removeItem('orders');
+                
+                // 清除聊天消息
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('chat_messages_')) {
+                        localStorage.removeItem(key);
+                    }
+                }
+                
+                updateDataStatus();
+                alert('测试数据已清除');
+            }
+        }
+        
+        function createTestData() {
+            // 创建测试担保群
+            const testGroups = [
+                {
+                    id: 'test_guarantee_1',
+                    name: '王者荣耀段位担保群',
+                    avatar: 'https://picsum.photos/seed/game1/40/40.jpg',
+                    lastMessage: '管理员已确认收款，开始代练服务',
+                    lastTime: '10:30',
+                    unreadCount: 0,
+                    isGroup: true,
+                    isGuarantee: true,
+                    members: [
+                        { name: '玩家小李', avatar: 'https://picsum.photos/seed/player1/40/40.jpg', role: 'buyer' },
+                        { name: '代练师小王', avatar: 'https://picsum.photos/seed/seller1/40/40.jpg', role: 'seller' },
+                        { name: '管理员', avatar: 'https://picsum.photos/seed/admin/40/40.jpg', role: 'admin' }
+                    ]
+                },
+                {
+                    id: 'test_guarantee_2', 
+                    name: '和平精英装备担保群',
+                    avatar: 'https://picsum.photos/seed/game2/40/40.jpg',
+                    lastMessage: '等待买家确认收货',
+                    lastTime: '09:15',
+                    unreadCount: 2,
+                    isGroup: true,
+                    isGuarantee: true,
+                    members: [
+                        { name: '买家小张', avatar: 'https://picsum.photos/seed/player2/40/40.jpg', role: 'buyer' },
+                        { name: '卖家小陈', avatar: 'https://picsum.photos/seed/seller2/40/40.jpg', role: 'seller' },
+                        { name: '管理员', avatar: 'https://picsum.photos/seed/admin/40/40.jpg', role: 'admin' }
+                    ]
+                },
+                {
+                    id: 'test_guarantee_3',
+                    name: '原神账号担保群', 
+                    avatar: 'https://picsum.photos/seed/game3/40/40.jpg',
+                    lastMessage: '账号交易已完成，资金已释放',
+                    lastTime: '昨天',
+                    unreadCount: 0,
+                    isGroup: true,
+                    isGuarantee: true,
+                    members: [
+                        { name: '买家小刘', avatar: 'https://picsum.photos/seed/player3/40/40.jpg', role: 'buyer' },
+                        { name: '卖家小赵', avatar: 'https://picsum.photos/seed/seller3/40/40.jpg', role: 'seller' },
+                        { name: '管理员', avatar: 'https://picsum.photos/seed/admin/40/40.jpg', role: 'admin' }
+                    ]
+                }
+            ];
+            
+            // 保存到聊天列表
+            const chatList = JSON.parse(localStorage.getItem('chatList') || '[]');
+            testGroups.forEach(group => {
+                if (!chatList.find(chat => chat.id === group.id)) {
+                    chatList.push(group);
+                }
+                
+                // 创建聊天消息
+                const messages = createGroupMessages(group);
+                localStorage.setItem(`chat_messages_${group.id}`, JSON.stringify(messages));
+            });
+            localStorage.setItem('chatList', JSON.stringify(chatList));
+            
+            // 保存到订单列表
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            testGroups.forEach(group => {
+                if (!orders.find(order => order.id === group.id)) {
+                    orders.push({
+                        id: group.id,
+                        title: group.name,
+                        status: group.id === 'test_guarantee_1' ? 'confirmed' : group.id === 'test_guarantee_2' ? 'pending' : 'completed',
+                        amount: group.id === 'test_guarantee_1' ? '200' : group.id === 'test_guarantee_2' ? '150' : '300',
+                        createdAt: new Date().toISOString()
+                    });
+                }
+            });
+            localStorage.setItem('orders', JSON.stringify(orders));
+            
+            updateDataStatus();
+            alert('测试数据创建成功！');
+        }
+        
+        function createGroupMessages(group) {
+            const baseMessages = [
+                {
+                    id: 1,
+                    sender: '系统消息',
+                    content: `${group.name} 已创建`,
+                    time: '09:00',
+                    isSelf: false,
+                    avatar: 'https://picsum.photos/seed/system/40/40.jpg',
+                    showTime: true,
+                    isSystem: true
+                },
+                {
+                    id: 2,
+                    sender: '系统消息',
+                    content: '管理员已自动加入群聊',
+                    time: '09:01',
+                    isSelf: false,
+                    avatar: 'https://picsum.photos/seed/system/40/40.jpg',
+                    isSystem: true
+                },
+                {
+                    id: 3,
+                    sender: '管理员',
+                    content: '大家好，我是管理员。担保交易已创建，请按照流程操作。',
+                    time: '09:02',
+                    isSelf: false,
+                    avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+                    isAdmin: true
+                }
+            ];
+            
+            // 根据群状态添加不同的消息
+            if (group.id === 'test_guarantee_1') {
+                baseMessages.push(
+                    {
+                        id: 4,
+                        sender: '玩家小李',
+                        content: '已支付，请确认',
+                        time: '10:00',
+                        isSelf: false,
+                        avatar: 'https://picsum.photos/seed/player1/40/40.jpg'
+                    },
+                    {
+                        id: 5,
+                        sender: '管理员',
+                        content: '✅ 收款确认成功！\n\n📋 资金到账信息：\n• 支付状态：已到账 ✓\n• 资金金额：已核实 ✓\n• 担保状态：生效中 ✓',
+                        time: '10:30',
+                        isSelf: false,
+                        avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+                        isAdmin: true
+                    }
+                );
+            }
+            
+            return baseMessages;
+        }
+        
+        function updateDataStatus() {
+            const status = document.getElementById('data-status');
+            const chatList = JSON.parse(localStorage.getItem('chatList') || '[]');
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            const guaranteeGroups = chatList.filter(chat => chat.isGuarantee);
+            
+            let messageCount = 0;
+            guaranteeGroups.forEach(group => {
+                const messages = JSON.parse(localStorage.getItem(`chat_messages_${group.id}`) || '[]');
+                messageCount += messages.length;
+            });
+            
+            status.innerHTML = `
+                <p><strong>聊天列表：</strong> ${chatList.length} 个群聊</p>
+                <p><strong>担保交易群：</strong> ${guaranteeGroups.length} 个</p>
+                <p><strong>订单数量：</strong> ${orders.length} 个</p>
+                <p><strong>聊天消息：</strong> ${messageCount} 条</p>
+                <details>
+                    <summary>详细数据</summary>
+                    <pre>${JSON.stringify({ chatList, orders }, null, 2)}</pre>
+                </details>
+            `;
+        }
+        
+        // 页面加载时更新状态
+        window.onload = function() {
+            updateDataStatus();
+        };
+    </script>
+</body>
+</html>
