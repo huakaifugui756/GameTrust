@@ -51,6 +51,11 @@ const isAdmin = computed(() => {
   return authStore.user?.isAdmin || false
 })
 
+// 检查当前是否为客服页面
+const isSupportPage = computed(() => {
+  return router.currentRoute.value.path === '/support'
+})
+
 // 跳转到客服中心
 const goToSupport = () => {
   router.push('/support')
@@ -61,6 +66,7 @@ const goToSupport = () => {
 #app {
   min-height: 100vh;
   background-color: #f7f8fa;
+  position: relative;
 }
 
 // 适配移动端
@@ -84,57 +90,66 @@ const goToSupport = () => {
 
 // 浮动客服按钮样式
 .floating-support {
-  position: fixed;
-  bottom: 80px; // 在底部导航栏上方
-  right: 20px;
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #1989fa 0%, #0066cc 100%);
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(25, 137, 250, 0.4);
-  transition: all 0.3s ease;
-  z-index: 1000;
+  position: fixed !important;
+  bottom: 80px !important; // 在底部导航栏上方
+  right: 20px !important;
+  width: 60px !important;
+  height: 60px !important;
+  background: linear-gradient(135deg, #1989fa 0%, #0066cc 100%) !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: white !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 12px rgba(25, 137, 250, 0.4) !important;
+  transition: all 0.3s ease !important;
+  z-index: 9999 !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
   
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(25, 137, 250, 0.5);
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(25, 137, 250, 0.5) !important;
   }
   
   &:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(25, 137, 250, 0.4);
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 8px rgba(25, 137, 250, 0.4) !important;
   }
   
   .van-icon {
-    margin-bottom: 2px;
+    margin-bottom: 2px !important;
+    color: white !important;
+    flex-shrink: 0 !important;
   }
   
   span {
-    font-size: 10px;
-    font-weight: 500;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    color: white !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
   }
 }
 
 // 移动端适配
 @media (max-width: 768px) {
   .floating-support {
-    width: 50px;
-    height: 50px;
-    bottom: 70px;
-    right: 15px;
+    width: 50px !important;
+    height: 50px !important;
+    bottom: 70px !important;
+    right: 15px !important;
     
     .van-icon {
-      font-size: 20px;
+      font-size: 20px !important;
     }
     
     span {
-      font-size: 9px;
+      font-size: 9px !important;
     }
   }
 }
