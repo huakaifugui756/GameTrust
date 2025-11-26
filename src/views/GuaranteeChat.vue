@@ -18,7 +18,7 @@
     </div>
 
     <!-- 担保交易状态卡片 -->
-    <div class="guarantee-status-card">
+    <div class="guarantee-status-card" v-show="showStatusCard">
       <div class="status-header">
         <van-icon name="shield-o" class="guarantee-icon" />
         <span class="status-title">担保交易状态</span>
@@ -33,7 +33,7 @@
       
       <div class="status-content">
         <div class="party-section">
-          <div class="party-item">
+          <div class="party-item" @click="showContactDetails(guaranteeGroup.initiator, 'initiator')">
             <div class="party-avatar">
               <img :src="guaranteeGroup.initiator?.avatar || defaultAvatar" />
             </div>
@@ -43,11 +43,12 @@
               <van-tag v-if="guaranteeGroup.initiatorConfirmed" type="success" size="mini">已确认</van-tag>
               <van-tag v-else type="warning" size="mini">待确认</van-tag>
             </div>
+            <van-icon name="arrow" class="party-arrow" />
           </div>
           
           <div class="vs-divider">VS</div>
           
-          <div class="party-item">
+          <div class="party-item" @click="showContactDetails(guaranteeGroup.receiver, 'receiver')">
             <div class="party-avatar">
               <img :src="guaranteeGroup.receiver?.avatar || defaultAvatar" />
             </div>
@@ -57,6 +58,7 @@
               <van-tag v-if="guaranteeGroup.receiverConfirmed" type="success" size="mini">已确认</van-tag>
               <van-tag v-else type="warning" size="mini">待确认</van-tag>
             </div>
+            <van-icon name="arrow" class="party-arrow" />
           </div>
         </div>
         
@@ -68,8 +70,9 @@
       </div>
       
       <div class="status-actions">
+        <!-- 普通用户确认按钮 -->
         <van-button 
-          v-if="canCurrentUserConfirm" 
+          v-if="canCurrentUserConfirm && !authStore.user?.isAdmin" 
           type="primary" 
           size="small"
           @click="confirmTransaction"
@@ -77,6 +80,8 @@
         >
           确认交易
         </van-button>
+        
+        <!-- 管理员确认按钮 -->
         <van-button 
           v-if="authStore.user?.isAdmin" 
           type="success" 
@@ -187,6 +192,72 @@
       @select="onAvatarActionSelect"
       cancel-text="取消"
     />
+
+    <!-- 联系人详情弹窗 -->
+    <van-popup 
+      v-model:show="showContactDetailsPopup" 
+      position="bottom" 
+      :style="{ height: '60%' }"
+      round
+    >
+      <div class="contact-details">
+        <div class="contact-header">
+          <div class="contact-avatar">
+            <img :src="selectedContact?.avatar || defaultAvatar" />
+          </div>
+          <div class="contact-info">
+            <div class="contact-name">{{ selectedContact?.name || '未知用户' }}</div>
+            <div class="contact-role">{{ selectedContactRole === 'initiator' ? '甲方（发起方）' : '乙方（接收方）' }}</div>
+            <van-tag 
+              :type="selectedContactRole === 'initiator' ? 
+                (guaranteeGroup.initiatorConfirmed ? 'success' : 'warning') : 
+                (guaranteeGroup.receiverConfirmed ? 'success' : 'warning')" 
+              size="small"
+            >
+              {{ selectedContactRole === 'initiator' ? 
+                (guaranteeGroup.initiatorConfirmed ? '已确认' : '待确认') : 
+                (guaranteeGroup.receiverConfirmed ? '已确认' : '待确认') }}
+            </van-tag>
+          </div>
+        </div>
+        
+        <div class="contact-actions">
+          <van-cell-group>
+            <van-cell 
+              title="发送私聊" 
+              is-link 
+              @click="sendPrivateMessage"
+              icon="chat-o"
+            />
+            <van-cell 
+              title="查看资料" 
+              is-link 
+              @click="viewUserProfile"
+              icon="contact"
+            />
+            <van-cell 
+              title="拨打电话" 
+              is-link 
+              @click="makePhoneCall"
+              icon="phone-o"
+              :value="selectedContact?.phone || '未知'"
+            />
+            <van-cell 
+              title="举报用户" 
+              is-link 
+              @click="reportUser"
+              icon="warning-o"
+            />
+          </van-cell-group>
+        </div>
+        
+        <div class="contact-close">
+          <van-button block @click="showContactDetailsPopup = false">
+            关闭
+          </van-button>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
@@ -207,6 +278,10 @@ const showAvatarActions = ref(false)
 const selectedUser = ref(null)
 const chatContent = ref(null)
 const confirming = ref(false)
+const showStatusCard = ref(true)
+const showContactDetailsPopup = ref(false)
+const selectedContact = ref(null)
+const selectedContactRole = ref('')
 const defaultAvatar = 'https://picsum.photos/seed/default/40/40.jpg'
 
 // 担保交易群信息
@@ -282,18 +357,34 @@ const dateGroups = computed(() => {
 // 判断当前用户是否可以确认
 const canCurrentUserConfirm = computed(() => {
   const currentUser = authStore.user
-  if (!currentUser || !guaranteeGroup.value) return false
+  console.log('=== canCurrentUserConfirm 计算 ===')
+  console.log('当前用户:', currentUser)
+  console.log('担保群:', guaranteeGroup.value)
+  
+  if (!currentUser || !guaranteeGroup.value) {
+    console.log('返回false: 用户或担保群信息不存在')
+    return false
+  }
+  
+  console.log('发起方电话:', guaranteeGroup.value.initiator?.phone)
+  console.log('接收方电话:', guaranteeGroup.value.receiver?.phone)
+  console.log('当前用户电话:', currentUser.phone)
+  console.log('发起方已确认:', guaranteeGroup.value.initiatorConfirmed)
+  console.log('接收方已确认:', guaranteeGroup.value.receiverConfirmed)
   
   // 如果是发起方且未确认
   if (guaranteeGroup.value.initiator?.phone === currentUser.phone && !guaranteeGroup.value.initiatorConfirmed) {
+    console.log('返回true: 发起方可以确认')
     return true
   }
   
   // 如果是接收方且未确认
   if (guaranteeGroup.value.receiver?.phone === currentUser.phone && !guaranteeGroup.value.receiverConfirmed) {
+    console.log('返回true: 接收方可以确认')
     return true
   }
   
+  console.log('返回false: 不满足确认条件')
   return false
 })
 
@@ -308,15 +399,21 @@ onMounted(() => {
 
 // 加载担保交易群信息
 const loadGuaranteeGroup = () => {
+  console.log('=== 开始加载担保群信息 ===')
+  console.log('当前chatId:', chatId)
+  
   // 先从sessionStorage获取
   const savedGroup = sessionStorage.getItem('guaranteeGroup')
   if (savedGroup) {
     guaranteeGroup.value = JSON.parse(savedGroup)
+    console.log('从sessionStorage加载:', guaranteeGroup.value)
   }
   
   // 然后从localStorage获取更详细的信息
   const chatList = JSON.parse(localStorage.getItem('chatList') || '[]')
+  console.log('chatList:', chatList)
   const chatInfo = chatList.find(chat => chat.id === chatId)
+  console.log('找到的chatInfo:', chatInfo)
   
   if (chatInfo) {
     guaranteeGroup.value = {
@@ -326,7 +423,9 @@ const loadGuaranteeGroup = () => {
     
     // 从订单信息获取更多数据
     const orders = JSON.parse(localStorage.getItem('orders') || '[]')
+    console.log('orders:', orders)
     const orderInfo = orders.find(order => order.id === chatId)
+    console.log('找到的orderInfo:', orderInfo)
     
     if (orderInfo) {
       guaranteeGroup.value = {
@@ -336,7 +435,25 @@ const loadGuaranteeGroup = () => {
     }
   }
   
-  console.log('加载的担保群信息:', guaranteeGroup.value)
+  console.log('最终加载的担保群信息:', guaranteeGroup.value)
+  
+  // 如果没有发起方和接收方信息，创建测试数据
+  if (!guaranteeGroup.value.initiator || !guaranteeGroup.value.receiver) {
+    console.log('创建测试数据')
+    guaranteeGroup.value.initiator = {
+      phone: '18812345678',
+      name: '测试甲方',
+      avatar: 'https://picsum.photos/seed/initiator/40/40.jpg'
+    }
+    guaranteeGroup.value.receiver = {
+      phone: '13987654321', 
+      name: '测试乙方',
+      avatar: 'https://picsum.photos/seed/receiver/40/40.jpg'
+    }
+    guaranteeGroup.value.initiatorConfirmed = false
+    guaranteeGroup.value.receiverConfirmed = false
+    console.log('创建测试数据后的担保群:', guaranteeGroup.value)
+  }
 }
 
 // 加载消息
@@ -673,12 +790,35 @@ const confirmTransaction = async () => {
   try {
     const currentUser = authStore.user
     
+    // 调试信息
+    console.log('当前用户:', currentUser)
+    console.log('担保群信息:', guaranteeGroup.value)
+    console.log('发起方电话:', guaranteeGroup.value.initiator?.phone)
+    console.log('接收方电话:', guaranteeGroup.value.receiver?.phone)
+    console.log('当前用户电话:', currentUser?.phone)
+    
+    let isInitiator = false
+    let isReceiver = false
+    
     // 判断当前用户是发起方还是接收方
-    if (guaranteeGroup.value.initiator?.phone === currentUser.phone) {
+    if (guaranteeGroup.value.initiator?.phone === currentUser?.phone) {
       guaranteeGroup.value.initiatorConfirmed = true
-    } else if (guaranteeGroup.value.receiver?.phone === currentUser.phone) {
+      isInitiator = true
+      console.log('用户是发起方，设置甲方确认')
+    } else if (guaranteeGroup.value.receiver?.phone === currentUser?.phone) {
       guaranteeGroup.value.receiverConfirmed = true
+      isReceiver = true
+      console.log('用户是接收方，设置乙方确认')
+    } else {
+      console.log('用户身份无法识别')
+      showToast('用户身份验证失败')
+      return
     }
+    
+    console.log('确认状态更新:', {
+      initiatorConfirmed: guaranteeGroup.value.initiatorConfirmed,
+      receiverConfirmed: guaranteeGroup.value.receiverConfirmed
+    })
     
     // 更新状态
     updateGuaranteeStatus()
@@ -687,7 +827,7 @@ const confirmTransaction = async () => {
     const confirmMessage = {
       id: Date.now(),
       sender: currentUser?.nickname || '用户',
-      content: `我已确认担保交易`,
+      content: `${isInitiator ? '甲方' : '乙方'}已确认担保交易`,
       time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
       isSelf: true,
       avatar: currentUser?.avatar || defaultAvatar
@@ -701,6 +841,9 @@ const confirmTransaction = async () => {
     
     // 如果双方都已确认
     if (guaranteeGroup.value.initiatorConfirmed && guaranteeGroup.value.receiverConfirmed) {
+      guaranteeGroup.value.status = 'confirmed'
+      updateGuaranteeStatus()
+      
       setTimeout(() => {
         const systemMessage = {
           id: Date.now() + 1,
@@ -751,8 +894,9 @@ const adminConfirm = async () => {
     
     showToast('管理员确认成功')
     
-    // 延迟发送后续流程指引
+    // 延迟隐藏状态卡片并发送后续流程指引
     setTimeout(() => {
+      showStatusCard.value = false
       sendTransactionGuidance()
     }, 3000)
     
@@ -762,6 +906,46 @@ const adminConfirm = async () => {
   } finally {
     confirming.value = false
   }
+}
+
+// 显示联系人详情
+const showContactDetails = (contact, role) => {
+  selectedContact.value = contact
+  selectedContactRole.value = role
+  showContactDetailsPopup.value = true
+}
+
+// 发送私聊
+const sendPrivateMessage = () => {
+  showToast(`正在给 ${selectedContact.value?.name} 发送私聊...`)
+  showContactDetailsPopup.value = false
+  // TODO: 实现私聊功能
+}
+
+// 查看用户资料
+const viewUserProfile = () => {
+  showToast(`查看 ${selectedContact.value?.name} 的资料...`)
+  showContactDetailsPopup.value = false
+  // TODO: 实现查看资料功能
+}
+
+// 拨打电话
+const makePhoneCall = () => {
+  const phone = selectedContact.value?.phone
+  if (phone) {
+    showToast(`正在拨打 ${phone}...`)
+    // 在实际应用中，可以调用系统拨号功能
+    window.location.href = `tel:${phone}`
+  } else {
+    showToast('该用户没有提供电话号码')
+  }
+}
+
+// 举报用户
+const reportUser = () => {
+  showToast(`举报 ${selectedContact.value?.name}...`)
+  showContactDetailsPopup.value = false
+  // TODO: 实现举报功能
 }
 
 // 更新担保状态
@@ -1203,6 +1387,18 @@ const enhancedAutoReply = (userMessage) => {
         background: #f8f9fa;
         border-radius: 8px;
         margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          background: #e9ecef;
+          transform: translateY(-1px);
+        }
+        
+        .party-arrow {
+          margin-left: auto;
+          color: #6c757d;
+        }
 
         .party-avatar {
           width: 48px;
@@ -1480,5 +1676,62 @@ const enhancedAutoReply = (userMessage) => {
 .chat-content::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 2px;
+}
+}
+
+// 联系人详情弹窗样式
+.contact-details {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  
+  .contact-header {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    
+    .contact-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      overflow: hidden;
+      margin-right: 16px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+    
+    .contact-info {
+      flex: 1;
+      
+      .contact-name {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      
+      .contact-role {
+        font-size: 14px;
+        opacity: 0.8;
+        margin-bottom: 8px;
+      }
+    }
+  }
+  
+  .contact-actions {
+    flex: 1;
+    overflow-y: auto;
+  }
+  
+  .contact-close {
+    padding: 16px;
+    border-top: 1px solid #f0f0f0;
+  }
 }
 </style>

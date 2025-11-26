@@ -85,11 +85,7 @@
             <van-icon name="setting-o" color="#ff976a" />
           </template>
         </van-cell>
-        <van-cell title="数据统计" is-link @click="goToDataStats">
-          <template #icon>
-            <van-icon name="chart-trending-o" color="#7232dd" />
-          </template>
-        </van-cell>
+
       </van-cell-group>
 
       <van-cell-group>
@@ -179,9 +175,7 @@ const goToSystemSettings = () => {
   router.push('/admin/dashboard');
 };
 
-const goToDataStats = () => {
-  router.push('/admin/dashboard');
-};
+
 
 
 </script>

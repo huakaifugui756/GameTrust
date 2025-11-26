@@ -6,33 +6,80 @@
     </div>
 
     <div class="login-form">
-      <van-form @submit="onSubmit">
-        <van-cell-group inset>
-          <van-field
-            v-model="form.phone"
-            name="phone"
-            label="手机号"
-            placeholder="请输入手机号"
-            :rules="[
-              { required: true, message: '请输入手机号' },
-              { validator: validatePhone, message: '请输入正确的手机号' }
-            ]"
-          />
-          <van-field
-            v-model="form.password"
-            type="password"
-            name="password"
-            label="密码"
-            placeholder="请输入密码"
-            :rules="[
-              { required: true, message: '请输入密码' },
-              { pattern: /^.{6,20}$/, message: '密码长度为6-20位' }
-            ]"
-          />
-        </van-cell-group>
+      <!-- 登录方式切换 -->
+      <div class="login-tabs">
+        <van-tabs v-model:active="activeTab" @change="onTabChange">
+          <van-tab title="密码登录" name="password">
+            <van-form @submit="onPasswordLogin">
+              <van-cell-group inset>
+                <van-field
+                  v-model="form.phone"
+                  name="phone"
+                  label="手机号"
+                  placeholder="请输入手机号"
+                  :rules="[
+                    { required: true, message: '请输入手机号' },
+                    { validator: validatePhone, message: '请输入正确的手机号' }
+                  ]"
+                />
+                <van-field
+                  v-model="form.password"
+                  type="password"
+                  name="password"
+                  label="密码"
+                  placeholder="请输入密码"
+                  :rules="[
+                    { required: true, message: '请输入密码' },
+                    { pattern: /^.{6,20}$/, message: '密码长度为6-20位' }
+                  ]"
+                />
+              </van-cell-group>
+            </van-form>
+          </van-tab>
+          
+          <van-tab title="验证码登录" name="sms">
+            <van-form @submit="onSmsLogin">
+              <van-cell-group inset>
+                <van-field
+                  v-model="smsForm.phone"
+                  name="phone"
+                  label="手机号"
+                  placeholder="请输入手机号"
+                  :rules="[
+                    { required: true, message: '请输入手机号' },
+                    { validator: validatePhone, message: '请输入正确的手机号' }
+                  ]"
+                />
+                <van-field
+                  v-model="smsForm.code"
+                  name="code"
+                  label="验证码"
+                  placeholder="请输入验证码"
+                  :rules="[
+                    { required: true, message: '请输入验证码' },
+                    { pattern: /^\d{6}$/, message: '验证码为6位数字' }
+                  ]"
+                >
+                  <template #button>
+                    <van-button
+                      size="small"
+                      type="primary"
+                      :disabled="!canSendSms || smsCountdown > 0"
+                      :loading="sendingSms"
+                      @click="sendSms"
+                    >
+                      {{ smsCountdown > 0 ? `${smsCountdown}s后重试` : '获取验证码' }}
+                    </van-button>
+                  </template>
+                </van-field>
+              </van-cell-group>
+            </van-form>
+          </van-tab>
+        </van-tabs>
+      </div>
         
         <div class="form-actions">
-          <van-button round block type="primary" native-type="submit" :loading="loading">
+          <van-button round block type="primary" @click="handleLogin" :loading="loading">
             登录
           </van-button>
           
@@ -48,28 +95,12 @@
             <span @click="forgotPassword">忘记密码</span>
           </div>
         </div>
-      </van-form>
-
-      <!-- 第三方登录 -->
-      <div class="third-party-login">
-        <div class="divider">
-          <span>其他登录方式</span>
-        </div>
-        <div class="third-party-buttons">
-          <van-button icon="wechat" type="success" size="large" round @click="wechatLogin">
-            微信登录
-          </van-button>
-          <van-button icon="qq" type="primary" size="large" round @click="qqLogin">
-            QQ登录
-          </van-button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast, showSuccessToast, showFailToast } from 'vant'
 import { useAuthStore } from '@/stores/auth'
@@ -77,10 +108,18 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 const loading = ref(false)
+const activeTab = ref('password')
+const sendingSms = ref(false)
+const smsCountdown = ref(0)
 
 const form = ref({
   phone: '',
   password: ''
+})
+
+const smsForm = ref({
+  phone: '',
+  code: ''
 })
 
 // 页面加载时检查是否有预填充的手机号
@@ -99,18 +138,38 @@ const validatePhone = (value) => {
   return true
 }
 
-const onSubmit = async (values) => {
+const onTabChange = (name) => {
+  activeTab.value = name
+}
+
+const handleLogin = async () => {
+  if (activeTab.value === 'password') {
+    await onPasswordLogin()
+  } else {
+    await onSmsLogin()
+  }
+}
+
+const onPasswordLogin = async () => {
+  if (!form.value.phone || !form.value.password) {
+    showToast('请填写完整信息')
+    return
+  }
+  
+  if (!validatePhone(form.value.phone)) {
+    return
+  }
+
   loading.value = true
   
   try {
     const result = await authStore.login({
-      phone: values.phone,
-      password: values.password
+      phone: form.value.phone,
+      password: form.value.password
     })
     
     if (result.success) {
       showSuccessToast('登录成功')
-      // 登录成功后跳转到首页或之前的页面
       const redirect = router.currentRoute.value.query.redirect || '/'
       router.push(redirect)
     } else {
@@ -123,17 +182,77 @@ const onSubmit = async (values) => {
   }
 }
 
+const onSmsLogin = async () => {
+  if (!smsForm.value.phone || !smsForm.value.code) {
+    showToast('请填写完整信息')
+    return
+  }
+  
+  if (!validatePhone(smsForm.value.phone)) {
+    return
+  }
+
+  loading.value = true
+  
+  try {
+    const result = await authStore.smsLogin({
+      phone: smsForm.value.phone,
+      code: smsForm.value.code
+    })
+    
+    if (result.success) {
+      showSuccessToast('登录成功')
+      const redirect = router.currentRoute.value.query.redirect || '/'
+      router.push(redirect)
+    } else {
+      showFailToast(result.error || '验证码错误')
+    }
+  } catch (error) {
+    showFailToast('登录失败，请重试')
+  } finally {
+    loading.value = false
+  }
+}
+
+const canSendSms = computed(() => {
+  return validatePhone(smsForm.value.phone) === true
+})
+
+const sendSms = async () => {
+  if (!canSendSms.value) {
+    return
+  }
+
+  sendingSms.value = true
+  
+  try {
+    // 模拟发送短信
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // 开始倒计时
+    smsCountdown.value = 60
+    const timer = setInterval(() => {
+      smsCountdown.value--
+      if (smsCountdown.value <= 0) {
+        clearInterval(timer)
+      }
+    }, 1000)
+    
+    showToast('验证码已发送')
+  } catch (error) {
+    showToast('发送失败，请重试')
+  } finally {
+    sendingSms.value = false
+  }
+}
+
 const forgotPassword = () => {
   router.push('/forgot-password')
 }
 
-const wechatLogin = async () => {
-  showToast('微信登录功能开发中')
-}
 
-const qqLogin = async () => {
-  showToast('QQ登录功能开发中')
-}
+
+
 
 // 测试账号快速填充
 const fillTestAccount = () => {
@@ -172,6 +291,37 @@ const fillTestAccount = () => {
 }
 
 .login-form {
+  .login-tabs {
+    margin-bottom: 20px;
+    
+    :deep(.van-tabs__nav) {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 4px;
+    }
+    
+    :deep(.van-tab) {
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 500;
+    }
+    
+    :deep(.van-tab--active) {
+      color: white;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+    }
+    
+    :deep(.van-tabs__line) {
+      display: none;
+    }
+    
+    :deep(.van-cell-group) {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+  }
+  
   .form-actions {
     margin: 20px 0;
     
@@ -220,46 +370,5 @@ const fillTestAccount = () => {
   }
 }
 
-.third-party-login {
-  margin-top: 40px;
-  
-  .divider {
-    position: relative;
-    text-align: center;
-    margin: 20px 0;
-    
-    &::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: rgba(255, 255, 255, 0.3);
-    }
-    
-    span {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 0 16px;
-      color: rgba(255, 255, 255, 0.8);
-      font-size: 14px;
-    }
-  }
-  
-  .third-party-buttons {
-    display: flex;
-    gap: 12px;
-    
-    .van-button {
-      flex: 1;
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.2);
-      color: white;
-      
-      &:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
-    }
-  }
-}
+
 </style>

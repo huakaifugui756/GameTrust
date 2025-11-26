@@ -27,6 +27,28 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // 短信验证码登录
+  const smsLogin = async (credentials) => {
+    try {
+      // 模拟API调用
+      const response = await mockSmsLoginApi(credentials)
+      
+      // 保存token和用户信息
+      token.value = response.token
+      user.value = response.user
+      
+      // 持久化存储
+      localStorage.setItem('token', response.token)
+      localStorage.setItem('user', JSON.stringify(response.user))
+      
+      return { success: true, data: response }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  }
+
+
+
   // 注册
   const register = async (userData) => {
     try {
@@ -117,6 +139,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     // 方法
     login,
+    smsLogin,
     register,
     logout,
     initUser,
@@ -198,6 +221,42 @@ const mockRegisterApi = async (userData) => {
     isAdmin: isAdmin
   }
 }
+
+const mockSmsLoginApi = async (credentials) => {
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  
+  // 验证手机号格式
+  const phoneRegex = /^1[3-9]\d{9}$/
+  if (!phoneRegex.test(credentials.phone)) {
+    throw new Error('手机号格式不正确')
+  }
+  
+  // 验证验证码（模拟：123456为正确验证码）
+  if (credentials.code !== '123456') {
+    throw new Error('验证码错误')
+  }
+  
+  // 检查是否为管理员账号
+  const isAdmin = credentials.phone.startsWith('188')
+  
+  return {
+    token: 'mock_sms_token_' + Date.now(),
+    user: {
+      id: Math.floor(Math.random() * 1000) + 1,
+      phone: credentials.phone,
+      name: isAdmin ? `管理员${credentials.phone.slice(-4)}` : `用户${credentials.phone.slice(-4)}`,
+      avatar: isAdmin ? 'https://picsum.photos/seed/admin/100/100.jpg' : `https://picsum.photos/seed/user${Date.now()}/100/100.jpg`,
+      rating: isAdmin ? 5.0 : (4.0 + Math.random()),
+      balance: isAdmin ? 999999 : Math.floor(Math.random() * 2000),
+      role: isAdmin ? 'admin' : 'user',
+      isAdmin: isAdmin,
+      createTime: new Date().toISOString(),
+      loginType: 'sms'
+    }
+  }
+}
+
+
 
 const mockValidateTokenApi = async (token) => {
   await new Promise(resolve => setTimeout(resolve, 500))

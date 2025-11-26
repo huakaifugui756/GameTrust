@@ -16,20 +16,6 @@
           <van-tag type="danger" size="medium">超级管理员</van-tag>
         </div>
       </div>
-      <div class="admin-stats">
-        <div class="stat-item">
-          <div class="value">{{ stats.totalUsers }}</div>
-          <div class="label">总用户数</div>
-        </div>
-        <div class="stat-item">
-          <div class="value">{{ stats.totalOrders }}</div>
-          <div class="label">总订单数</div>
-        </div>
-        <div class="stat-item">
-          <div class="value">{{ stats.pendingReviews }}</div>
-          <div class="label">待审核</div>
-        </div>
-      </div>
     </div>
 
     <!-- 管理功能网格 -->
@@ -110,11 +96,7 @@ const adminInfo = ref({
   avatar: 'https://picsum.photos/seed/admin/100/100.jpg'
 })
 
-const stats = ref({
-  totalUsers: 1234,
-  totalOrders: 567,
-  pendingReviews: 8
-})
+
 
 const adminFunctions = ref([
   { id: 1, name: '用户管理', icon: 'manager-o', color: '#1989fa', route: '/admin/users' },
@@ -142,8 +124,11 @@ onMounted(() => {
 })
 
 const handleFunctionClick = (func) => {
-  showToast(`${func.name}功能开发中...`)
-  // router.push(func.route)
+  if (func.route) {
+    router.push(func.route)
+  } else {
+    showToast(`${func.name}功能开发中...`)
+  }
 }
 
 const showAnnouncementDialog = () => {

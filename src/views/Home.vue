@@ -166,6 +166,26 @@ const banners = ref([
 
 // 快捷入口
 const quickEntries = ref([
+  {
+    name: "联系人",
+    icon: "friends-o",
+    onClick: () => router.push("/friends"),
+  },
+  {
+    name: "消息",
+    icon: "chat-o",
+    onClick: () => router.push("/messages"),
+  },
+  {
+    name: "订单",
+    icon: "orders-o",
+    onClick: () => router.push("/orders"),
+  },
+  {
+    name: "客服",
+    icon: "service-o",
+    onClick: () => router.push("/support"),
+  },
 ]);
 
 // 数据统计

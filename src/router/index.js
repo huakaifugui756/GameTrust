@@ -182,6 +182,18 @@ const routes = [
     component: () => import("@/views/AdminDashboard.vue"),
     meta: { title: "管理员控制台", requiresAuth: true, requiresAdmin: true },
   },
+  {
+    path: "/admin/orders",
+    name: "OrderReview",
+    component: () => import("@/views/admin/OrderReview.vue"),
+    meta: { title: "订单审核", requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: "/admin/stats",
+    name: "DataStats",
+    component: () => import("@/views/admin/DataStats.vue"),
+    meta: { title: "数据统计", requiresAuth: true, requiresAdmin: true },
+  },
 ];
 
 const router = createRouter({

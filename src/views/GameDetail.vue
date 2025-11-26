@@ -227,7 +227,7 @@ const enterChatRoom = (roomId) => {
 }
 
 const showContacts = () => {
-  showToast('联系人功能')
+  router.push('/friends')
 }
 
 
