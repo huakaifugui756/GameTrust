@@ -137,7 +137,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
@@ -166,11 +166,6 @@ const banners = ref([
 
 // 快捷入口
 const quickEntries = ref([
-  {
-    name: "客服中心",
-    icon: "service",
-    onClick: () => router.push("/support"),
-  },
 ]);
 
 // 数据统计

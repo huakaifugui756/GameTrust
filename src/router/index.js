@@ -19,6 +19,25 @@ const routes = [
     component: () => import("@/views/GameDetail.vue"),
     meta: { title: "游戏详情" },
   },
+  // 订单相关路由
+  {
+    path: "/orders",
+    name: "Orders",
+    component: () => import("@/views/Orders.vue"),
+    meta: { title: "订单", requiresAuth: true },
+  },
+  {
+    path: "/orders/create",
+    name: "CreateOrder",
+    component: () => import("@/views/CreateOrder.vue"),
+    meta: { title: "创建订单", requiresAuth: true },
+  },
+  {
+    path: "/order/:id",
+    name: "OrderDetail",
+    component: () => import("@/views/OrderDetail.vue"),
+    meta: { title: "订单详情" },
+  },
   // 社群功能暂时隐藏
   // {
   //   path: '/community',
@@ -107,12 +126,7 @@ const routes = [
     component: () => import("@/views/ProfilePosts.vue"),
     meta: { title: "我的帖子", requiresAuth: true },
   },
-  {
-    path: "/profile/favorites",
-    name: "ProfileFavorites",
-    component: () => import("@/views/ProfileFavorites.vue"),
-    meta: { title: "我的收藏", requiresAuth: true },
-  },
+
   {
     path: "/profile/verification",
     name: "ProfileVerification",

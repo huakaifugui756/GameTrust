@@ -54,19 +54,12 @@
       <van-tabs v-model:active="activeTab" sticky>
         <van-tab title="全部" name="all">
           <div class="result-section">
-            <div class="section-title">需求</div>
-            <DemandList :demands="searchResults.demands" @view-demand="viewDemand" />
-            
             <div class="section-title">游戏</div>
             <GameList :games="searchResults.games" @view-game="viewGame" />
             
             <div class="section-title">用户</div>
             <UserList :users="searchResults.users" @view-user="viewUser" />
           </div>
-        </van-tab>
-        
-        <van-tab title="需求" name="demands">
-          <DemandList :demands="searchResults.demands" @view-demand="viewDemand" />
         </van-tab>
         
         <van-tab title="游戏" name="games">
@@ -92,7 +85,6 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast } from 'vant'
-import DemandList from '@/components/DemandList.vue'
 import GameList from '@/components/GameList.vue'
 import UserList from '@/components/UserList.vue'
 
@@ -118,35 +110,18 @@ const hotSearches = ref([
 
 // 搜索结果
 const searchResults = reactive({
-  demands: [],
   games: [],
   users: []
 })
 
 // 是否有搜索结果
 const hasResults = computed(() => {
-  return searchResults.demands.length > 0 || 
-         searchResults.games.length > 0 || 
+  return searchResults.games.length > 0 || 
          searchResults.users.length > 0
 })
 
 // 模拟数据
-const mockDemands = [
-  {
-    id: 1,
-    title: '王者荣耀星耀段位，需要代练上王者',
-    type: '代练',
-    gameName: '王者荣耀',
-    description: '当前星耀二，需要上到王者段位。要求效率高，信誉好的代练。',
-    minPrice: 50,
-    maxPrice: 100,
-    status: '待接单',
-    publisher: {
-      name: '游戏小王',
-      avatar: 'https://picsum.photos/seed/user1/32/32.jpg'
-    }
-  }
-]
+
 
 const mockGames = [
   {
@@ -229,14 +204,6 @@ const onSearch = async (query) => {
     // 模拟搜索结果
     const keyword = searchQuery.value.toLowerCase()
     
-    // 搜索需求
-    searchResults.demands = mockDemands.filter(demand => 
-      demand.title.toLowerCase().includes(keyword) ||
-      demand.description.toLowerCase().includes(keyword) ||
-      demand.gameName.toLowerCase().includes(keyword) ||
-      demand.type.toLowerCase().includes(keyword)
-    )
-    
     // 搜索游戏
     searchResults.games = mockGames.filter(game => 
       game.name.toLowerCase().includes(keyword) ||
@@ -261,10 +228,6 @@ const clearHistory = () => {
   searchHistory.value = []
   localStorage.removeItem('searchHistory')
   showToast('搜索历史已清空')
-}
-
-const viewDemand = (id) => {
-  router.push(`/demand/${id}`)
 }
 
 const viewGame = (id) => {

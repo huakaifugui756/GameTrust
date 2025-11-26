@@ -39,20 +39,7 @@
         <van-button size="small" @click="editProfile">编辑</van-button>
       </div>
 
-      <div class="user-stats">
-        <div class="stat-item">
-          <div class="value">{{ userInfo.orderCount }}</div>
-          <div class="label">订单</div>
-        </div>
-        <div class="stat-item">
-          <div class="value">{{ userInfo.followCount }}</div>
-          <div class="label">关注</div>
-        </div>
-        <div class="stat-item">
-          <div class="value">{{ userInfo.fansCount }}</div>
-          <div class="label">粉丝</div>
-        </div>
-      </div>
+
     </div>
 
     <!-- 功能菜单 -->
@@ -64,11 +51,7 @@
           is-link
           @click="$router.push('/profile/posts')"
         />
-        <van-cell
-          title="我的收藏"
-          is-link
-          @click="$router.push('/profile/favorites')"
-        />
+
         <van-cell
           title="实名认证"
           is-link
@@ -199,6 +182,8 @@ const goToSystemSettings = () => {
 const goToDataStats = () => {
   router.push('/admin/dashboard');
 };
+
+
 </script>
 
 <style lang="scss" scoped>
@@ -291,25 +276,7 @@ const goToDataStats = () => {
     }
   }
 
-  .user-stats {
-    display: flex;
-    justify-content: space-around;
 
-    .stat-item {
-      text-align: center;
-
-      .value {
-        font-size: 20px;
-        font-weight: 600;
-        margin-bottom: 4px;
-      }
-
-      .label {
-        font-size: 12px;
-        opacity: 0.8;
-      }
-    }
-  }
 }
 
 .menu-list {
