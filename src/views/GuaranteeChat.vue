@@ -491,6 +491,15 @@ const loadMessages = () => {
         isSelf: false,
         avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
         isAdmin: true
+      },
+      {
+        id: 4,
+        sender: '管理员',
+        content: '【收款码】请扫描下方二维码完成担保费用支付\n[收款码图片]\n\n💡 支付完成后请在群内回复"已支付"，我会立即确认并协助完成后续流程。',
+        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        isSelf: false,
+        avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+        isAdmin: true
       }
     ]
     
@@ -1676,7 +1685,6 @@ const enhancedAutoReply = (userMessage) => {
 .chat-content::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 2px;
-}
 }
 
 // 联系人详情弹窗样式

@@ -982,25 +982,67 @@ const onActionSelect = (action) => {
       }
       break
     case 'create_order':
-      // 直接创建担保交易群聊
+      // 创建担保交易群聊
       const guaranteeGroup = {
         id: 'guarantee_' + Date.now(),
+        name: `🤝 担保交易：${chatInfo.value.title}`,
+        avatar: chatInfo.value.avatar,
         title: `担保交易：${chatInfo.value.title}`,
+        isGroup: true,
+        isGuarantee: true,
+        lastMessage: '等待双方确认担保交易',
+        lastTime: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        unreadCount: 0,
         initiator: {
+          id: authStore.user?.id || 'current_user',
+          name: authStore.user?.name || '我',
+          phone: authStore.user?.phone || '13800138000',
+          avatar: authStore.user?.avatar || 'https://picsum.photos/seed/currentuser/40/40.jpg'
+        },
+        receiver: {
           id: selectedUser.value?.id || 'user_' + Date.now(),
           name: chatInfo.value.title,
-          avatar: chatInfo.value.avatar
+          avatar: chatInfo.value.avatar,
+          phone: selectedUser.value?.phone || '13800138001'
         },
         amount: '待确认',
         description: '担保交易',
-        createdAt: new Date().toISOString()
+        status: 'pending',
+        initiatorConfirmed: false,
+        receiverConfirmed: false,
+        createdAt: new Date().toISOString(),
+        members: [
+          {
+            name: authStore.user?.name || '我',
+            phone: authStore.user?.phone || '13800138000',
+            avatar: authStore.user?.avatar || 'https://picsum.photos/seed/currentuser/40/40.jpg',
+            role: 'buyer'
+          },
+          {
+            name: chatInfo.value.title,
+            phone: selectedUser.value?.phone || '13800138001',
+            avatar: chatInfo.value.avatar,
+            role: 'seller'
+          },
+          {
+            name: '管理员',
+            phone: '18800000000',
+            avatar: 'https://picsum.photos/seed/admin/40/40.jpg',
+            role: 'admin'
+          }
+        ]
       }
       
-      // 保存担保交易群信息
+      // 保存到 localStorage 的 chatList
+      const chatList = JSON.parse(localStorage.getItem('chatList') || '[]')
+      chatList.push(guaranteeGroup)
+      localStorage.setItem('chatList', JSON.stringify(chatList))
+      
+      // 保存担保交易群信息到 sessionStorage
       sessionStorage.setItem('guaranteeGroup', JSON.stringify(guaranteeGroup))
       
-      // 直接跳转到担保交易群聊
-      window.location.href = `/guarantee-chat/${guaranteeGroup.id}`
+      // 使用 Vue Router 跳转
+      router.push(`/guarantee-chat/${guaranteeGroup.id}`)
       showToast('担保交易群聊已创建')
       break
     case 'block':
