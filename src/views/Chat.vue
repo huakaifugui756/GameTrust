@@ -1317,7 +1317,7 @@ const onAvatarActionSelect = (action) => {
     case 'view_profile':
       console.log('🔵 选择查看资料')
       // 跳转到用户资料页面
-      router.push(`/profile/${selectedUser.value.id}`)
+      router.push(`/user/${selectedUser.value.id}`)
       showToast(`查看 ${selectedUser.value.name} 的资料`)
       break
   }

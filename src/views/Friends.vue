@@ -24,9 +24,9 @@
             v-for="friend in filteredFriends" 
             :key="friend.id" 
             class="friend-item"
-            @click="goToProfile(friend)"
+            @click="startChat(friend)"
           >
-            <div class="friend-avatar">
+            <div class="friend-avatar" @click.stop="goToProfile(friend)">
               <img :src="friend.avatar" :alt="friend.name" />
               <div class="online-status" :class="{ 'online': friend.online }"></div>
             </div>
@@ -285,7 +285,7 @@ const rejectRequest = (request) => {
 }
 
 const goToProfile = (friend) => {
-  router.push(`/profile/${friend.id}`)
+  router.push(`/user/${friend.id}`)
 }
 
 const startChat = (friend) => {

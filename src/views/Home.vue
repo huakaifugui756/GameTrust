@@ -10,9 +10,9 @@
         @search="onSearch"
       />
       <div class="header-actions">
-        <div class="location-info">
+        <div class="location-info" @click="refreshLocation">
           <van-icon name="location-o" />
-          <span>当前位置</span>
+          <span>{{ currentLocation }}</span>
         </div>
         <van-button
           size="small"
@@ -38,19 +38,7 @@
       </van-swipe-item>
     </van-swipe>
 
-    <!-- 快捷入口 -->
-    <div class="quick-entry card">
-      <van-grid :column-num="4" :border="false">
-        <van-grid-item
-          v-for="item in quickEntries"
-          :key="item.name"
-          :icon="item.icon"
-          :text="item.name"
-          @click="item.onClick"
-          class="quick-entry-item"
-        />
-      </van-grid>
-    </div>
+
 
     <!-- 数据统计 -->
     <div class="stats-section card">
@@ -137,13 +125,20 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import { showToast, showLoadingToast, closeToast } from "vant";
 
 const router = useRouter();
 const authStore = useAuthStore();
 const searchValue = ref("");
+const currentLocation = ref("获取位置中...");
+
+// 确保响应式变量正确初始化
+if (!currentLocation.value) {
+  currentLocation.value = "获取位置中...";
+}
 
 // 轮播图数据
 const banners = ref([
@@ -164,29 +159,7 @@ const banners = ref([
   },
 ]);
 
-// 快捷入口
-const quickEntries = ref([
-  {
-    name: "联系人",
-    icon: "friends-o",
-    onClick: () => router.push("/friends"),
-  },
-  {
-    name: "消息",
-    icon: "chat-o",
-    onClick: () => router.push("/messages"),
-  },
-  {
-    name: "订单",
-    icon: "orders-o",
-    onClick: () => router.push("/orders"),
-  },
-  {
-    name: "客服",
-    icon: "service-o",
-    onClick: () => router.push("/support"),
-  },
-]);
+
 
 // 数据统计
 const stats = ref({
@@ -254,6 +227,102 @@ const goToAuth = () => {
   }
 };
 
+// 获取用户位置
+const getUserLocation = async () => {
+  if (!navigator.geolocation) {
+    currentLocation.value = "不支持定位";
+    showToast("您的浏览器不支持定位功能");
+    return;
+  }
+
+  try {
+    showLoadingToast({
+      message: '获取位置中...',
+      forbidClick: true,
+      duration: 0
+    });
+
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5分钟缓存
+      });
+    });
+
+    closeToast();
+    
+    // 使用逆地理编码API获取地址信息
+    const { latitude, longitude } = position.coords;
+    const address = await reverseGeocode(latitude, longitude);
+    currentLocation.value = address;
+    
+    // 保存到本地存储
+    localStorage.setItem('userLocation', address);
+    localStorage.setItem('userCoords', JSON.stringify({ latitude, longitude }));
+    
+  } catch (error) {
+    closeToast();
+    console.error('获取位置失败:', error);
+    
+    // 尝试从本地存储获取
+    const savedLocation = localStorage.getItem('userLocation');
+    if (savedLocation) {
+      currentLocation.value = savedLocation;
+      showToast('使用上次位置信息');
+    } else {
+      currentLocation.value = "定位失败";
+      showToast('获取位置失败，请检查定位权限');
+    }
+  }
+};
+
+// 逆地理编码 - 将坐标转换为地址
+const reverseGeocode = async (lat, lng) => {
+  try {
+    // 使用高德地图API（需要申请API Key）
+    // 这里使用模拟数据，实际项目中需要替换为真实的API调用
+    const mockAddresses = [
+      "北京市朝阳区",
+      "上海市浦东新区", 
+      "广州市天河区",
+      "深圳市南山区",
+      "杭州市西湖区"
+    ];
+    
+    // 根据坐标模拟返回不同城市
+    const index = Math.abs(Math.floor((lat + lng) * 10)) % mockAddresses.length;
+    return mockAddresses[index];
+    
+    // 实际API调用示例：
+    // const response = await fetch(
+    //   `https://restapi.amap.com/v3/geocode/regeo?key=YOUR_API_KEY&location=${lng},${lat}&poitype=&radius=1000&extensions=all&batch=false&roadlevel=0`
+    // );
+    // const data = await response.json();
+    // return data.regeocode.formatted_address || '未知位置';
+    
+  } catch (error) {
+    console.error('逆地理编码失败:', error);
+    return "未知位置";
+  }
+};
+
+// 刷新位置
+const refreshLocation = () => {
+  getUserLocation();
+};
+
+// 页面加载时获取位置
+onMounted(() => {
+  // 先尝试从本地存储获取
+  const savedLocation = localStorage.getItem('userLocation');
+  if (savedLocation) {
+    currentLocation.value = savedLocation;
+  } else {
+    getUserLocation();
+  }
+});
+
 
 </script>
 
@@ -291,9 +360,30 @@ const goToAuth = () => {
     gap: 4px;
     color: rgba(255, 255, 255, 0.9);
     font-size: 12px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    max-width: 120px;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    &:active {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(0.95);
+    }
 
     .van-icon {
       font-size: 14px;
+      flex-shrink: 0;
+    }
+    
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
@@ -353,35 +443,7 @@ const goToAuth = () => {
   }
 }
 
-// 快捷入口
-.quick-entry {
-  margin: 0 16px 20px;
-  background: white;
-  border-radius: 12px;
-  padding: 20px 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 
-  .quick-entry-item {
-    :deep(.van-grid-item__content) {
-      padding: 12px 8px;
-
-      &:active {
-        background: #f2f3f5;
-        border-radius: 8px;
-      }
-    }
-
-    :deep(.van-grid-item__icon) {
-      font-size: 24px;
-      margin-bottom: 8px;
-    }
-
-    :deep(.van-grid-item__text) {
-      font-size: 12px;
-      color: #323233;
-    }
-  }
-}
 
 // 数据统计
 .stats-section {

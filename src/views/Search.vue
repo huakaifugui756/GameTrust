@@ -235,7 +235,7 @@ const viewGame = (id) => {
 }
 
 const viewUser = (id) => {
-  router.push(`/profile/${id}`)
+  router.push(`/user/${id}`)
 }
 </script>
 
