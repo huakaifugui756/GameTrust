@@ -157,7 +157,8 @@ const contactSupport = () => {
 }
 
 const goToHelp = (type) => {
-  router.push(`/help/${type}`)
+  // 跳转到帮助中心页面，并传递类型参数
+  router.push({ path: '/help', query: { type } })
 }
 
 const copyToClipboard = async (text) => {
