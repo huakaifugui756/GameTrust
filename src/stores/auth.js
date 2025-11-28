@@ -1,88 +1,219 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { supabase } from '../supabase'
 
 export const useAuthStore = defineStore('auth', () => {
   // 状态
   const user = ref(null)
   const token = ref(localStorage.getItem('token') || '')
   const isLoggedIn = computed(() => !!token.value && !!user.value)
+  const isLoading = ref(false)
+
+  // 监听认证状态变化
+  const initAuth = () => {
+    // 监听Supabase认证状态变化
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session)
+      
+      if (event === 'SIGNED_IN') {
+        token.value = session.access_token
+        localStorage.setItem('token', session.access_token)
+        
+        // 获取用户详细信息
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+        
+        if (userData) {
+          user.value = userData
+          localStorage.setItem('user', JSON.stringify(userData))
+        }
+      } else if (event === 'SIGNED_OUT') {
+        logout()
+      }
+    })
+
+    // 初始化时检查现有会话
+    checkAuthStatus()
+  }
 
   // 登录
   const login = async (credentials) => {
+    isLoading.value = true
+    
     try {
-      // 模拟API调用
-      const response = await mockLoginApi(credentials)
-      
-      // 保存token和用户信息
-      token.value = response.token
-      user.value = response.user
-      
-      // 持久化存储
-      localStorage.setItem('token', response.token)
-      localStorage.setItem('user', JSON.stringify(response.user))
-      
-      return { success: true, data: response }
+      const { data, error } = await supabase.auth.signInWithPassword({
+        phone: credentials.phone,
+        password: credentials.password
+      })
+
+      if (error) throw error
+
+      // 获取用户详细信息
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single()
+
+      if (userError) throw userError
+
+      user.value = userData
+      token.value = data.session.access_token
+
+      return { success: true, data: { token: data.session.access_token, user: userData } }
     } catch (error) {
+      console.error('Login error:', error)
       return { success: false, error: error.message }
+    } finally {
+      isLoading.value = false
     }
   }
 
   // 短信验证码登录
   const smsLogin = async (credentials) => {
+    isLoading.value = true
+    
     try {
-      // 模拟API调用
-      const response = await mockSmsLoginApi(credentials)
-      
-      // 保存token和用户信息
-      token.value = response.token
-      user.value = response.user
-      
-      // 持久化存储
-      localStorage.setItem('token', response.token)
-      localStorage.setItem('user', JSON.stringify(response.user))
-      
-      return { success: true, data: response }
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: credentials.phone,
+        token: credentials.code,
+        type: 'sms'
+      })
+
+      if (error) throw error
+
+      // 获取或创建用户信息
+      let { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single()
+
+      if (userError && userError.code === 'PGRST116') {
+        // 用户不存在，创建新用户
+        const { data: newUserData, error: createError } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: data.user.id,
+              phone: credentials.phone,
+              role: 'user'
+            }
+          ])
+          .select()
+          .single()
+        
+        if (createError) throw createError
+        
+        userData = newUserData
+      } else if (userError) {
+        throw userError
+      }
+
+      user.value = userData
+      token.value = data.session.access_token
+
+      return { success: true, data: { token: data.session.access_token, user: userData } }
     } catch (error) {
+      console.error('SMS login error:', error)
       return { success: false, error: error.message }
+    } finally {
+      isLoading.value = false
     }
   }
 
-
-
   // 注册
   const register = async (userData) => {
+    isLoading.value = true
+    
     try {
-      // 模拟API调用
-      const response = await mockRegisterApi(userData)
-      
-      // 如果注册成功，自动登录
-      if (response.userId) {
-        const loginData = await mockLoginApi({
-          phone: userData.phone,
-          password: userData.password
-        })
-        
-        // 保存token和用户信息
-        token.value = loginData.token
-        user.value = {
-          ...loginData.user,
-          role: response.role,
-          isAdmin: response.isAdmin
+      // 1. 注册到Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        phone: userData.phone,
+        password: userData.password,
+        options: {
+          data: {
+            username: userData.username
+          }
         }
-        
-        // 保存到本地存储
-        localStorage.setItem('token', token.value)
-        localStorage.setItem('user', JSON.stringify(user.value))
+      })
+
+      if (error) throw error
+
+      // 2. 在public.users表中创建用户记录
+      const { data: userRecord, error: userError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: data.user.id,
+            phone: userData.phone,
+            username: userData.username,
+            role: 'user' // 默认为普通用户
+          }
+        ])
+        .select()
+        .single()
+
+      if (userError) throw userError
+
+      // 如果不需要邮箱验证，直接登录
+      if (!data.user.email_confirmed_at && data.user.email) {
+        return { 
+          success: true, 
+          data: { 
+            message: '注册成功，请查收邮箱验证链接',
+            userId: data.user.id
+          } 
+        }
       }
-      
-      return { success: true, data: response }
+
+      user.value = userRecord
+      token.value = data.session?.access_token || ''
+
+      return { success: true, data: { token: data.session?.access_token || '', user: userRecord } }
     } catch (error) {
+      console.error('Registration error:', error)
       return { success: false, error: error.message }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // 发送短信验证码
+  const sendSmsCode = async (phone) => {
+    isLoading.value = true
+    
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone,
+        options: {
+          shouldCreateUser: false // 只为现有用户发送验证码
+        }
+      })
+
+      if (error) throw error
+
+      return { success: true, data: { message: '验证码已发送' } }
+    } catch (error) {
+      console.error('Send SMS error:', error)
+      return { success: false, error: error.message }
+    } finally {
+      isLoading.value = false
     }
   }
 
   // 登出
-  const logout = () => {
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) console.error('Logout error:', error)
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+
     user.value = null
     token.value = ''
     localStorage.removeItem('token')
@@ -90,11 +221,14 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // 初始化用户信息（从本地存储恢复）
-  const initUser = () => {
+  const initUser = async () => {
     const savedUser = localStorage.getItem('user')
-    if (savedUser && token.value) {
+    const savedToken = localStorage.getItem('token')
+    
+    if (savedUser && savedToken) {
       try {
         user.value = JSON.parse(savedUser)
+        token.value = savedToken
       } catch (error) {
         console.error('Failed to parse user data:', error)
         logout()
@@ -102,40 +236,75 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // 在store创建时自动初始化
-  initUser()
-
   // 更新用户信息
-  const updateUser = (newUserData) => {
-    user.value = { ...user.value, ...newUserData }
-    localStorage.setItem('user', JSON.stringify(user.value))
+  const updateUser = async (newUserData) => {
+    isLoading.value = true
+    
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update(newUserData)
+        .eq('id', user.value.id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      
+      user.value = { ...user.value, ...data }
+      localStorage.setItem('user', JSON.stringify(user.value))
+      
+      return { success: true, data: user.value }
+    } catch (error) {
+      console.error('Update user error:', error)
+      return { success: false, error: error.message }
+    } finally {
+      isLoading.value = false
+    }
   }
 
   // 检查登录状态
   const checkAuthStatus = async () => {
-    if (!token.value) return false
+    const { data: { session }, error } = await supabase.auth.getSession()
     
-    try {
-      // 模拟验证token的API调用
-      const response = await mockValidateTokenApi(token.value)
-      if (response.valid) {
-        user.value = response.user
+    if (error) {
+      console.error('Check auth status error:', error)
+      logout()
+      return false
+    }
+
+    if (session) {
+      token.value = session.access_token
+      
+      // 获取用户详细信息
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single()
+      
+      if (userData) {
+        user.value = userData
+        localStorage.setItem('user', JSON.stringify(userData))
         return true
       } else {
         logout()
         return false
       }
-    } catch (error) {
+    } else {
       logout()
       return false
     }
   }
+
+  // 初始化
+  initAuth()
 
   return {
     // 状态
     user,
     token,
     isLoggedIn,
+    isLoading,
     
     // 方法
     login,
@@ -144,130 +313,8 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     initUser,
     updateUser,
-    checkAuthStatus
+    checkAuthStatus,
+    sendSmsCode
   }
 })
 
-// 模拟API函数
-const mockLoginApi = async (credentials) => {
-  // 模拟网络延迟
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  // 简单的模拟验证逻辑
-  if (credentials.phone === '13800138000' && credentials.password === '123456') {
-    return {
-      token: 'mock_token_' + Date.now(),
-      user: {
-        id: 1,
-        phone: credentials.phone,
-        name: '测试用户',
-        avatar: 'https://picsum.photos/seed/user1/100/100.jpg',
-        rating: 4.5,
-        balance: 1000,
-        role: 'user',
-        isAdmin: false,
-        createTime: new Date().toISOString()
-      }
-    }
-  }
-  
-  // 模拟其他用户登录
-  if (credentials.phone && credentials.password.length >= 6) {
-    // 检查是否为管理员账号（手机号前缀为188）
-    const isAdmin = credentials.phone.startsWith('188')
-    
-    return {
-      token: 'mock_token_' + Date.now(),
-      user: {
-        id: Math.floor(Math.random() * 1000) + 1,
-        phone: credentials.phone,
-        name: isAdmin ? `管理员${credentials.phone.slice(-4)}` : `用户${credentials.phone.slice(-4)}`,
-        avatar: isAdmin ? 'https://picsum.photos/seed/admin/100/100.jpg' : `https://picsum.photos/seed/user${Date.now()}/100/100.jpg`,
-        rating: isAdmin ? 5.0 : (4.0 + Math.random()),
-        balance: isAdmin ? 999999 : Math.floor(Math.random() * 2000),
-        role: isAdmin ? 'admin' : 'user',
-        isAdmin: isAdmin,
-        createTime: new Date().toISOString()
-      }
-    }
-  }
-  
-  throw new Error('手机号或密码错误')
-}
-
-const mockRegisterApi = async (userData) => {
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  // 验证手机号格式
-  const phoneRegex = /^1[3-9]\d{9}$/
-  if (!phoneRegex.test(userData.phone)) {
-    throw new Error('手机号格式不正确')
-  }
-  
-  // 验证密码长度
-  if (!userData.password || userData.password.length < 6 || userData.password.length > 20) {
-    throw new Error('密码长度为6-20位')
-  }
-  
-  // 检查是否为管理员账号（手机号前缀为188的自动设为管理员）
-  const isAdmin = userData.phone.startsWith('188')
-  const userId = Math.floor(Math.random() * 1000) + 1
-  
-  // 模拟注册成功，包含角色信息
-  return {
-    message: isAdmin ? '管理员账号注册成功' : '注册成功',
-    userId: userId,
-    role: isAdmin ? 'admin' : 'user',
-    isAdmin: isAdmin
-  }
-}
-
-const mockSmsLoginApi = async (credentials) => {
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  // 验证手机号格式
-  const phoneRegex = /^1[3-9]\d{9}$/
-  if (!phoneRegex.test(credentials.phone)) {
-    throw new Error('手机号格式不正确')
-  }
-  
-  // 验证验证码（模拟：123456为正确验证码）
-  if (credentials.code !== '123456') {
-    throw new Error('验证码错误')
-  }
-  
-  // 检查是否为管理员账号
-  const isAdmin = credentials.phone.startsWith('188')
-  
-  return {
-    token: 'mock_sms_token_' + Date.now(),
-    user: {
-      id: Math.floor(Math.random() * 1000) + 1,
-      phone: credentials.phone,
-      name: isAdmin ? `管理员${credentials.phone.slice(-4)}` : `用户${credentials.phone.slice(-4)}`,
-      avatar: isAdmin ? 'https://picsum.photos/seed/admin/100/100.jpg' : `https://picsum.photos/seed/user${Date.now()}/100/100.jpg`,
-      rating: isAdmin ? 5.0 : (4.0 + Math.random()),
-      balance: isAdmin ? 999999 : Math.floor(Math.random() * 2000),
-      role: isAdmin ? 'admin' : 'user',
-      isAdmin: isAdmin,
-      createTime: new Date().toISOString(),
-      loginType: 'sms'
-    }
-  }
-}
-
-
-
-const mockValidateTokenApi = async (token) => {
-  await new Promise(resolve => setTimeout(resolve, 500))
-  
-  // 简单的token验证
-  if (token && token.startsWith('mock_token_')) {
-    return {
-      valid: true,
-      user: JSON.parse(localStorage.getItem('user') || '{}')
-    }
-  }
-  
-  return { valid: false }
-}

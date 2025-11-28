@@ -10,6 +10,7 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.86.0",
     "@vant/touch-emulator": "^1.4.0",
     "axios": "^1.6.0",
     "pinia": "^2.1.7",
