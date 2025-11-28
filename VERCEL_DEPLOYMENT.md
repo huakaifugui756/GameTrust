@@ -92,6 +92,15 @@ Vercel 会自动检测项目类型并使用以下设置：
 3. 添加环境变量后触发新的部署
 4. 检查构建日志中是否显示了正确的环境变量值
 
+### JavaScript 模块加载错误
+
+如果遇到类似 "Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of 'text/html'" 的错误：
+
+1. 检查 `vercel.json` 中的路由配置是否正确
+2. 确保静态资源（JS、CSS等）有自己的路由规则，不被重定向到 index.html
+3. 正确的路由配置应该优先处理静态资源，然后再处理SPA路由
+4. 重新部署项目使路由配置生效
+
 ### API 路由问题
 
 如果您的应用有 API 路由，确保：
