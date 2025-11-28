@@ -27,10 +27,20 @@ npm i -g vercel
 
 在 Vercel 项目设置中添加以下环境变量：
 
-| 名称 | 值 | 说明 |
-|------|------|------|
-| `VITE_SUPABASE_URL` | `https://vunlqahnzdparmujchpc.supabase.co` | Supabase 项目 URL |
-| `VITE_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1bmxxYWhuemRwYXJtdWpjaHBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyODE1MzMsImV4cCI6MjA3OTg1NzUzM30.RT1bUUTZmIVdA0xOx-CH6VnIEQyUve8N0zmYj4Jb9Fo` | Supabase 匿名访问密钥 |
+**步骤：**
+1. 在 Vercel 项目仪表板中，点击 "Settings" 选项卡
+2. 在左侧菜单中点击 "Environment Variables"
+3. 添加以下环境变量：
+
+| 名称 | 值 | 环境 | 说明 |
+|------|------|------|------|
+| `VITE_SUPABASE_URL` | `https://vunlqahnzdparmujchpc.supabase.co` | Production, Preview, Development | Supabase 项目 URL |
+| `VITE_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1bmxxYWhuemRwYXJtdWpjaHBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyODE1MzMsImV4cCI6MjA3OTg1NzUzM30.RT1bUUTZmIVdA0xOx-CH6VnIEQyUve8N0zmYj4Jb9Fo` | Production, Preview, Development | Supabase 匿名访问密钥 |
+
+**注意：**
+- 确保环境变量名称完全一致，包括前缀 `VITE_`
+- 选择适当的环境（Production, Preview, Development）
+- 添加环境变量后，需要重新部署项目才能生效
 
 ### 4. 构建设置
 
@@ -63,6 +73,24 @@ Vercel 会自动检测项目类型并使用以下设置：
 1. 检查 `package.json` 中的依赖是否正确
 2. 确保所有环境变量已正确设置
 3. 查看构建日志以获取详细错误信息
+
+### 环境变量错误
+
+如果遇到类似 "Environment Variable 'VITE_SUPABASE_URL' references Secret 'supabase-url', which does not exist" 的错误：
+
+1. 确保在 Vercel 项目设置中直接添加环境变量，而不是引用 Secret
+2. 环境变量名称必须完全匹配，包括 `VITE_` 前缀
+3. 添加环境变量后需要重新部署项目
+4. 确保环境变量值中没有多余的空格或换行符
+
+### 环境变量未生效
+
+如果环境变量添加后似乎未生效：
+
+1. 确保变量名以 `VITE_` 开头（Vite 要求）
+2. 在代码中使用 `import.meta.env.VITE_SUPABASE_URL` 访问变量
+3. 添加环境变量后触发新的部署
+4. 检查构建日志中是否显示了正确的环境变量值
 
 ### API 路由问题
 
