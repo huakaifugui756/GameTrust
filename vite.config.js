@@ -21,6 +21,16 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    assetsDir: 'assets'
+    assetsDir: 'assets',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['vue', 'vue-router', 'pinia'],
+          supabase: ['@supabase/supabase-js'],
+          ui: ['vant']
+        }
+      }
+    }
   }
 })
