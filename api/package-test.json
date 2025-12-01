@@ -1,0 +1,32 @@
+{
+  "name": "gametrust-api-tests",
+  "version": "1.0.0",
+  "description": "Tests for GameTrust API",
+  "scripts": {
+    "test": "jest --detectOpenHandles",
+    "test:watch": "jest --watch --detectOpenHandles",
+    "test:coverage": "jest --coverage --detectOpenHandles",
+    "test:auth": "jest --testPathPattern=auth.test.js --detectOpenHandles",
+    "test:orders": "jest --testPathPattern=orders.test.js --detectOpenHandles",
+    "test:all": "jest --detectOpenHandles"
+  },
+  "dependencies": {
+    "supertest": "^6.3.3"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": ["./tests/setup.js"],
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "**/*.js",
+      "!node_modules/**",
+      "!tests/**",
+      "!coverage/**"
+    ]
+  }
+}
