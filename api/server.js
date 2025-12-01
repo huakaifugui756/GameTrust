@@ -10,6 +10,16 @@ const PORT = 3005;
 app.use(cors());
 app.use(bodyParser.json());
 
+// 健康检查端点
+app.get('/api/health', (req, res) => {
+  res.json(formatResponse(true, {
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  }, 'API服务器运行正常'));
+});
+
 // API辅助函数
 const formatResponse = (success, data = null, message = '', error = null) => {
   const response = { success }
