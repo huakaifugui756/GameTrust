@@ -1,27 +1,29 @@
 <template>
   <div id="app">
-    <router-view />
-    
-    <!-- 底部导航栏 -->
-    <van-tabbar v-model="active" route>
-      <van-tabbar-item to="/" icon="home-o">首页</van-tabbar-item>
-      <van-tabbar-item to="/games" icon="apps-o">游戏</van-tabbar-item>
-      <van-tabbar-item to="/friends" icon="friends-o" :badge="friendRequests > 0 ? friendRequests : ''">好友</van-tabbar-item>
-      <van-tabbar-item to="/messages" icon="chat-o" :badge="unreadCount > 0 ? unreadCount : ''">消息</van-tabbar-item>
-      <van-tabbar-item 
-        to="/profile" 
-        :icon="isAdmin ? 'manager-o' : 'user-o'"
-        :class="{ 'admin-tab': isAdmin }"
-      >
-        {{ isAdmin ? '管理' : '我的' }}
-      </van-tabbar-item>
-    </van-tabbar>
-    
-    <!-- 浮动客服按钮 -->
-    <div class="floating-support" @click="goToSupport">
-      <van-icon name="service" size="24" />
-      <span>客服</span>
-    </div>
+    <ErrorBoundary>
+      <router-view />
+      
+      <!-- 底部导航栏 -->
+      <van-tabbar v-model="active" route>
+        <van-tabbar-item to="/" icon="home-o">首页</van-tabbar-item>
+        <van-tabbar-item to="/games" icon="apps-o">游戏</van-tabbar-item>
+        <van-tabbar-item to="/friends" icon="friends-o" :badge="friendRequests > 0 ? friendRequests : ''">好友</van-tabbar-item>
+        <van-tabbar-item to="/messages" icon="chat-o" :badge="unreadCount > 0 ? unreadCount : ''">消息</van-tabbar-item>
+        <van-tabbar-item 
+          to="/profile" 
+          :icon="isAdmin ? 'manager-o' : 'user-o'"
+          :class="{ 'admin-tab': isAdmin }"
+        >
+          {{ isAdmin ? '管理' : '我的' }}
+        </van-tabbar-item>
+      </van-tabbar>
+      
+      <!-- 浮动客服按钮 -->
+      <div class="floating-support" @click="goToSupport">
+        <van-icon name="service" size="24" />
+        <span>客服</span>
+      </div>
+    </ErrorBoundary>
   </div>
 </template>
 
@@ -29,6 +31,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import ErrorBoundary from '@/components/ErrorBoundary.vue'
 
 const router = useRouter()
 const active = ref(0)
