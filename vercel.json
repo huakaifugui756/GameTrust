@@ -6,12 +6,16 @@
       "config": {
         "distDir": "dist"
       }
+    },
+    {
+      "src": "api/package.json",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "dest": "/api/server.js"
     },
     {
       "src": "/assets/(.*)",
