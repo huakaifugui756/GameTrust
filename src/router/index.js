@@ -181,6 +181,12 @@ const routes = [
     component: () => import("@/views/Debug.vue"),
     meta: { title: "调试信息" },
   },
+  {
+    path: "/test",
+    name: "Test",
+    component: () => import("../components/TestComponent.vue"),
+    meta: { title: "测试页面" },
+  },
   // 管理员路由
   {
     path: "/admin/dashboard",

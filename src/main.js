@@ -92,11 +92,12 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
     `
     document.body.appendChild(errorDiv)
   }
-} else {
-  // 挂载应用
-  authStore.checkAuthStatus().then(() => {
-    app.mount('#app')
-  }).catch(error => {
-    console.error('应用挂载失败:', error)
-  })
 }
+
+// 始终挂载应用，无论环境变量如何
+app.mount('#app')
+
+// 然后检查认证状态
+authStore.checkAuthStatus().catch(error => {
+  console.error('认证状态检查失败:', error)
+})
